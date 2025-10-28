@@ -223,7 +223,7 @@ const AppRoutes = () => {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <HelmetProvider>
-      <NextThemesProvider attribute="class" defaultTheme="dark" enableSystem={false}>
+      <NextThemesProvider attribute="class" defaultTheme="light" enableSystem={false}>
         <TooltipProvider>
           <SecureAuthProvider>
             <ThemeProvider>

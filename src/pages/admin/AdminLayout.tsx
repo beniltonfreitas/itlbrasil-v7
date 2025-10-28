@@ -59,6 +59,7 @@ import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { useSecureAuth } from "@/contexts/SecureAuthContext";
 import { useSecurePermissions } from "@/hooks/useSecurePermissions";
 import { useSidebarState } from "@/hooks/useSidebarState";
@@ -295,9 +296,10 @@ const AdminLayout = () => {
   }));
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border bg-card">
+    <NextThemesProvider attribute="class" defaultTheme="dark" enableSystem={false}>
+      <div className="min-h-screen bg-background">
+        {/* Header */}
+        <header className="border-b border-border bg-card">
         <div className="flex h-16 items-center justify-between px-6">
           <div className="flex items-center gap-2">
             <FileText className="h-6 w-6 text-primary" />
@@ -632,6 +634,7 @@ const AdminLayout = () => {
         </main>
       </div>
     </div>
+    </NextThemesProvider>
   );
 };
 
