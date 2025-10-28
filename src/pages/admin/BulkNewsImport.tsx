@@ -2,8 +2,6 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -14,9 +12,7 @@ import {
   AlertTriangle,
   FileText,
   Loader2,
-  Check,
-  Sparkles,
-  Copy
+  Check
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useCreateArticle } from "@/hooks/useArticleMutations";
@@ -97,24 +93,8 @@ interface ImportResult {
   slug?: string;
 }
 
-interface NewsInput {
-  newsUrl: string;
-  imageUrl: string;
-}
 
 const BulkNewsImport = () => {
-  const [newsInputs, setNewsInputs] = useState<NewsInput[]>([
-    { newsUrl: '', imageUrl: '' },
-    { newsUrl: '', imageUrl: '' },
-    { newsUrl: '', imageUrl: '' },
-    { newsUrl: '', imageUrl: '' },
-    { newsUrl: '', imageUrl: '' }
-  ]);
-  const [generatedJson, setGeneratedJson] = useState("");
-  const [generating, setGenerating] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [copied, setCopied] = useState(false);
-  
   const [jsonInput, setJsonInput] = useState("");
   const [importing, setImporting] = useState(false);
   const [importProgress, setImportProgress] = useState(0);
@@ -130,270 +110,6 @@ const BulkNewsImport = () => {
   const { data: categories } = useCategories();
   const { data: authors } = useAuthors();
 
-  const handleGenerateJson = async () => {
-    // Verificar se está logado antes de começar
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      toast({
-        title: "🔒 Sessão expirada",
-        description: "Faça login novamente para continuar",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    const validInputs = newsInputs.filter(input => input.newsUrl.trim());
-    
-    if (validInputs.length === 0) {
-      toast({
-        title: "Erro",
-        description: "Forneça pelo menos 1 link de notícia",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    // Validar URLs antes de processar
-    const invalidUrls: string[] = [];
-    validInputs.forEach((input, idx) => {
-      try {
-        new URL(input.newsUrl);
-        if (input.imageUrl) new URL(input.imageUrl);
-      } catch {
-        invalidUrls.push(`Notícia ${idx + 1}: URL inválida`);
-      }
-    });
-
-    if (invalidUrls.length > 0) {
-      toast({
-        title: "URLs inválidas detectadas",
-        description: invalidUrls.join(', '),
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    setGenerating(true);
-    setProgress(0);
-    const allNews: any[] = [];
-    
-    // Mostrar tempo estimado
-    toast({
-      title: `Processando ${validInputs.length} notícias`,
-      description: `Tempo estimado: ${validInputs.length * 15}s. Aguarde...`
-    });
-    
-    for (let i = 0; i < validInputs.length; i++) {
-      const { newsUrl, imageUrl } = validInputs[i];
-      
-      try {
-        toast({
-          title: `Processando notícia ${i + 1} de ${validInputs.length}...`,
-          description: "Aguarde enquanto o Repórter AI extrai as informações",
-        });
-        
-        console.log('🔗 Calling reporter-ai with:', { newsUrl, imageUrl });
-        
-        const { data, error } = await supabase.functions.invoke('reporter-ai', {
-          body: { newsUrl, imageUrl: imageUrl || undefined }
-        });
-        
-        console.log('📦 Response:', { data, error });
-        
-      if (error) {
-        console.error('❌ Supabase error:', error);
-        
-        let errorDetail = error.message;
-        if (errorDetail.includes('Failed to send a request')) {
-          errorDetail = 'Edge Function não está acessível. Verifique se reporter-ai está implantada e se Lovable Cloud está ativo.';
-        } else if (errorDetail.includes('FunctionsRelayError') || errorDetail.includes('FunctionsHttpError')) {
-          errorDetail = 'Erro de comunicação com a função. A função pode não estar implantada corretamente.';
-        }
-        
-        throw new Error(`Erro na chamada: ${errorDetail}`);
-      }
-      
-      if (!data) {
-        throw new Error('Resposta vazia da edge function - a função pode ter falhado sem retornar erro');
-      }
-      
-      if (!data.success) {
-        throw new Error(data.error || 'Edge function retornou erro sem mensagem');
-      }
-      
-      if (!data.json?.noticias?.[0]) {
-        throw new Error('JSON retornado não contém notícias válidas');
-      }
-        
-        allNews.push(data.json.noticias[0]);
-        
-        toast({
-          title: `✅ Notícia ${i + 1} processada`,
-          description: data.json.noticias[0].titulo.substring(0, 50) + '...',
-        });
-        
-      } catch (err: any) {
-        console.error(`❌ Erro ao processar ${newsUrl}:`, err);
-        
-        // Detectar erros comuns e fornecer mensagens específicas
-        let errorMessage = err.message || "Erro desconhecido";
-        
-        if (errorMessage.includes('LOVABLE_API_KEY')) {
-          errorMessage = '⚠️ LOVABLE_API_KEY não configurada. Configure em Cloud > Secrets';
-        } else if (errorMessage.includes('Failed to fetch') || errorMessage.includes('fetch')) {
-          errorMessage = '🌐 Erro de rede. Verifique se a URL está acessível';
-        } else if (errorMessage.includes('401') || errorMessage.includes('unauthorized')) {
-          errorMessage = '🔒 Erro de autenticação. Faça login novamente';
-        } else if (errorMessage.includes('429')) {
-          errorMessage = '⏱️ Limite de requisições excedido. Aguarde e tente novamente';
-        } else if (errorMessage.includes('402')) {
-          errorMessage = '💳 Créditos insuficientes. Adicione créditos no Lovable';
-        }
-        
-        toast({
-          title: `❌ Erro na notícia ${i + 1}`,
-          description: errorMessage,
-          variant: "destructive",
-          duration: 8000
-        });
-      }
-      
-      setProgress(((i + 1) / validInputs.length) * 100);
-    }
-    
-    const finalJson = {
-      noticias: allNews
-    };
-    
-    setGeneratedJson(JSON.stringify(finalJson, null, 2));
-    setGenerating(false);
-    
-    if (allNews.length > 0) {
-      toast({
-        title: "✅ JSON Gerado!",
-        description: `${allNews.length} de ${validInputs.length} notícias geradas com sucesso`,
-      });
-    } else {
-      toast({
-        title: "❌ Nenhuma notícia gerada",
-        description: "Verifique os erros acima e a configuração do Lovable Cloud.",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const handleTestConnection = async () => {
-    try {
-      toast({ 
-        title: "🔍 Testando conexão com Repórter AI...",
-        description: "Verificando status da edge function..."
-      });
-      
-      console.log('🔗 Testing connection to reporter-ai...');
-      
-      const { data: { session } } = await supabase.auth.getSession();
-      console.log('🔑 Has auth session:', !!session);
-      
-      if (!session) {
-        toast({
-          title: "🔒 Sessão expirada",
-          description: "Faça login novamente para testar a conexão",
-          variant: "destructive"
-        });
-        return;
-      }
-      
-      const { data, error } = await supabase.functions.invoke('reporter-ai', {
-        body: { 
-          newsUrl: 'https://agenciabrasil.ebc.com.br/geral/noticia/2025-10/teste',
-          imageUrl: undefined 
-        }
-      });
-      
-      console.log('📦 Full response:', { data, error });
-      
-      if (error) {
-        console.error('❌ Error details:', {
-          message: error.message,
-          name: error.name,
-          context: error.context
-        });
-        
-        let errorMsg = error.message;
-        let troubleshootingSteps = '';
-        
-        // Detectar tipos específicos de erro
-        if (errorMsg.includes('Failed to send a request')) {
-          troubleshootingSteps = '\n\n🔧 Possíveis causas:\n' +
-                     '1. Edge function reporter-ai não está implantada no Supabase\n' +
-                     '2. Lovable Cloud não está ativo\n' +
-                     '3. LOVABLE_API_KEY não está configurada nas Secrets\n' +
-                     '4. Problema de rede ou firewall';
-          errorMsg = '🚫 Não foi possível conectar à edge function';
-        } else if (errorMsg.includes('FunctionsRelayError') || errorMsg.includes('FunctionsHttpError')) {
-          troubleshootingSteps = '\n\n🔧 A função pode não estar implantada corretamente ou está com erro interno';
-          errorMsg = '🔌 Erro de comunicação com a função';
-        } else if (errorMsg.includes('401') || errorMsg.includes('unauthorized')) {
-          troubleshootingSteps = '\n\n🔧 Faça logout e login novamente';
-          errorMsg = '🔒 Erro de autenticação';
-        }
-        
-        toast({
-          title: "❌ Erro na conexão",
-          description: errorMsg + troubleshootingSteps,
-          variant: "destructive",
-          duration: 15000
-        });
-      } else if (data?.success) {
-        console.log('✅ Connection successful, response:', data);
-        toast({
-          title: "✅ Conexão Estabelecida!",
-          description: "A edge function reporter-ai está funcionando corretamente. Você pode gerar notícias normalmente.",
-          duration: 5000
-        });
-      } else {
-        console.log('⚠️ Partial success:', data);
-        toast({
-          title: "⚠️ Conexão Parcial",
-          description: data?.error ? 
-            `Função conectou mas retornou erro: ${data.error}` : 
-            "Edge function respondeu, mas houve erro ao processar a URL de teste (isso é normal para URLs de teste)",
-          duration: 8000
-        });
-      }
-    } catch (err: any) {
-      console.error('💥 Unexpected error:', err);
-      toast({
-        title: "❌ Erro Inesperado",
-        description: err.message || 'Erro desconhecido ao testar conexão. Verifique o console do navegador.',
-        variant: "destructive",
-        duration: 10000
-      });
-    }
-  };
-
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(generatedJson);
-      setCopied(true);
-      toast({
-        title: "Copiado!",
-        description: "JSON copiado para a área de transferência",
-      });
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      toast({
-        title: "Erro",
-        description: "Não foi possível copiar o JSON",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const handleImportDirectly = () => {
-    setJsonInput(generatedJson);
-    setTimeout(() => handleImport(), 100);
-  };
 
   const handleValidateOnly = () => {
     setValidating(true);
@@ -484,7 +200,7 @@ const BulkNewsImport = () => {
     if (!validated) return;
 
     setImporting(true);
-    setProgress(0);
+    setImportProgress(0);
     setResults([]);
 
     const authorId = getDefaultAuthorId();
@@ -624,149 +340,22 @@ const BulkNewsImport = () => {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold flex items-center gap-2">
-          <Sparkles className="h-8 w-8 text-primary" />
-          Repórter AI
+          <Upload className="h-8 w-8 text-primary" />
+          Importar em Massa
         </h1>
-        <p className="text-muted-foreground">
-          Cole o LINK das notícias e abaixo o LINK da imagem
+        <p className="text-muted-foreground mt-1">
+          Cole o JSON gerado pelo Repórter AI para importar múltiplas notícias de uma vez
         </p>
       </div>
 
-      {/* Input Section - News URLs */}
+      {/* Import Section */}
       <Card>
         <CardHeader>
-          <CardTitle>📋 LINK das Notícias</CardTitle>
+          <CardTitle>Importar Notícias</CardTitle>
           <CardDescription>
-            Cole aqui o LINK das matérias e abaixo o LINK da imagem. <strong>Sugestão: cole até 5 links por vez.</strong>
+            Cole o JSON gerado pelo Repórter AI no formato: <code className="bg-muted px-1.5 py-0.5 rounded">{"{"}"noticias": [...]{"}"}</code>
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
-          {newsInputs.map((input, idx) => (
-            <div key={idx} className="space-y-3 p-4 border rounded-lg bg-card">
-              <Label className="font-semibold text-base">📰 Notícia {idx + 1}</Label>
-              
-              <div className="space-y-2">
-                <Label htmlFor={`news-${idx}`}>Link da Notícia</Label>
-                <Input
-                  id={`news-${idx}`}
-                  type="url"
-                  placeholder="https://agenciabrasil.ebc.com.br/..."
-                  value={input.newsUrl}
-                  onChange={(e) => {
-                    const newInputs = [...newsInputs];
-                    newInputs[idx].newsUrl = e.target.value;
-                    setNewsInputs(newInputs);
-                  }}
-                  disabled={generating}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor={`image-${idx}`}>Link da Imagem (opcional)</Label>
-                <Input
-                  id={`image-${idx}`}
-                  type="url"
-                  placeholder="https://imagens.ebc.com.br/..."
-                  value={input.imageUrl}
-                  onChange={(e) => {
-                    const newInputs = [...newsInputs];
-                    newInputs[idx].imageUrl = e.target.value;
-                    setNewsInputs(newInputs);
-                  }}
-                  disabled={generating}
-                />
-              </div>
-            </div>
-          ))}
-          
-          <div className="flex gap-2">
-            <Button 
-              onClick={handleTestConnection}
-              variant="outline"
-              size="sm"
-              disabled={generating}
-            >
-              🔍 Testar Conexão
-            </Button>
-          </div>
-          
-          <Button 
-            onClick={handleGenerateJson}
-            disabled={generating || !newsInputs.some(i => i.newsUrl.trim())}
-            className="w-full"
-            size="lg"
-          >
-            {generating ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Gerando JSON... {Math.round(progress)}%
-              </>
-            ) : (
-              <>
-                <Sparkles className="h-4 w-4 mr-2" />
-                Gerar JSON das {newsInputs.filter(i => i.newsUrl.trim()).length} Notícias
-              </>
-            )}
-          </Button>
-          
-          {generating && (
-            <div className="space-y-2">
-              <Progress value={progress} />
-              <Alert>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <AlertDescription>
-                  Processando notícia {Math.floor((progress / 100) * newsInputs.filter(i => i.newsUrl.trim()).length) + 1} de {newsInputs.filter(i => i.newsUrl.trim()).length}...
-                  <br />
-                  <span className="text-xs text-muted-foreground">
-                    Cada notícia leva ~10-20 segundos. Aguarde...
-                  </span>
-                </AlertDescription>
-              </Alert>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Generated JSON Section */}
-      {generatedJson && (
-        <Card>
-          <CardHeader>
-            <div className="flex justify-between items-center">
-              <CardTitle>📋 JSON Gerado</CardTitle>
-              <div className="flex gap-2">
-                <Button onClick={handleCopy} variant="outline" size="sm">
-                  {copied ? <Check className="h-4 w-4 mr-2" /> : <Copy className="h-4 w-4 mr-2" />}
-                  {copied ? "Copiado!" : "Copiar"}
-                </Button>
-                <Button onClick={handleImportDirectly} size="sm">
-                  <Upload className="h-4 w-4 mr-2" />
-                  Importar Diretamente
-                </Button>
-              </div>
-            </div>
-            <CardDescription>
-              Após gerar o JSON, o Repórter AI criou um arquivo no formato: <code className="bg-muted px-1">{"{"}"noticias": [{"{...}"}]{"}"}</code>
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Textarea
-              value={generatedJson}
-              readOnly
-              className="font-mono text-xs min-h-[400px]"
-            />
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Import Section - Hidden until JSON is available */}
-      {jsonInput && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Importar Notícias</CardTitle>
-            <CardDescription>
-              Valide e importe as notícias geradas
-            </CardDescription>
-          </CardHeader>
           <CardContent className="space-y-4">
             <Textarea
               value={jsonInput}
@@ -846,7 +435,6 @@ const BulkNewsImport = () => {
           )}
         </CardContent>
       </Card>
-      )}
 
       {/* Validation Report */}
       {validationReport && (
