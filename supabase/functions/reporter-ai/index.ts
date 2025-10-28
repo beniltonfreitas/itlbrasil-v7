@@ -110,8 +110,7 @@ ${articleContent.slice(0, 50000)}`; // Limit content to avoid token limits
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
-        ],
-        temperature: 0.3
+        ]
       }),
     });
 

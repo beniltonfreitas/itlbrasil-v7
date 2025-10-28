@@ -36,18 +36,20 @@ export const useVPNSession = () => {
   // Fetch available servers (public servers, no auth required)
   const fetchServers = useCallback(async () => {
     try {
-      const { data, error } = await supabase
-        .from('vpn_servers')
-        .select('*')
-        .eq('status', 'active')
-        .order('latency_ms', { ascending: true });
+      // TODO: Uncomment when vpn_servers table is created in the database
+      // const { data, error } = await supabase
+      //   .from('vpn_servers')
+      //   .select('*')
+      //   .eq('status', 'active')
+      //   .order('latency_ms', { ascending: true });
 
-      if (error) {
-        console.error('Error fetching VPN servers:', error);
-        return;
-      }
+      // if (error) {
+      //   console.error('Error fetching VPN servers:', error);
+      //   return;
+      // }
 
-      setServers(data || []);
+      // setServers(data || []);
+      setServers([]);
     } catch (error) {
       console.error('Exception fetching VPN servers:', error);
     } finally {
@@ -71,27 +73,28 @@ export const useVPNSession = () => {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
 
-        const { data, error } = await supabase
-          .from('vpn_sessions')
-          .select('*, vpn_servers(*)')
-          .eq('user_id_hash', user.id)
-          .eq('status', 'active')
-          .eq('is_guest', false)
-          .order('started_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
+        // TODO: Uncomment when vpn_sessions table is created in the database
+        // const { data, error } = await supabase
+        //   .from('vpn_sessions')
+        //   .select('*, vpn_servers(*)')
+        //   .eq('user_id_hash', user.id)
+        //   .eq('status', 'active')
+        //   .eq('is_guest', false)
+        //   .order('started_at', { ascending: false })
+        //   .limit(1)
+        //   .maybeSingle();
 
-        if (!error && data) {
-          setSession({
-            id: data.id,
-            token: data.session_token,
-            server: data.vpn_servers,
-            wsUrl: `wss://${data.vpn_servers.host}:${data.vpn_servers.port}/vpn`,
-            status: data.status,
-            public_ip: data.public_ip,
-            is_guest: false
-          });
-        }
+        // if (!error && data) {
+        //   setSession({
+        //     id: data.id,
+        //     token: data.session_token,
+        //     server: data.vpn_servers,
+        //     wsUrl: `wss://${data.vpn_servers.host}:${data.vpn_servers.port}/vpn`,
+        //     status: data.status,
+        //     public_ip: data.public_ip,
+        //     is_guest: false
+        //   });
+        // }
       } catch (error) {
         console.error('Error checking active session:', error);
       }
