@@ -58,6 +58,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { useSecureAuth } from "@/contexts/SecureAuthContext";
 import { useSecurePermissions } from "@/hooks/useSecurePermissions";
 import { useSidebarState } from "@/hooks/useSidebarState";
@@ -149,6 +150,38 @@ const AdminLayout = () => {
     // Dashboard (standalone)
     { name: "Dashboard", href: "/admin", icon: LayoutDashboard, permission: "dashboard" },
     
+    // Meus Projetos (logo abaixo do Dashboard)
+    { 
+      name: "Meus Projetos", 
+      icon: Briefcase, 
+      permission: "projects-group",
+      type: "group",
+      key: "meus-projetos",
+      submenu: [
+        { 
+          name: "ITL Brasil", 
+          href: "https://itlbrasil.com.br", 
+          icon: Globe, 
+          permission: "project-itl",
+          external: true
+        },
+        { 
+          name: "CDN", 
+          href: "https://cdn.itlbrasil.com.br", 
+          icon: CloudCog, 
+          permission: "project-cdn",
+          external: true
+        },
+        { 
+          name: "CONSABS", 
+          href: "https://consabs.site", 
+          icon: Building2, 
+          permission: "project-consabs",
+          external: true
+        },
+      ]
+    },
+    
     // VPN (standalone)
     { name: "Ativar VPN", href: "/admin/vpn", icon: Shield, permission: "vpn" },
     
@@ -173,38 +206,6 @@ const AdminLayout = () => {
         { name: "Instagram", href: "/admin/training/instagram", icon: Instagram, permission: "training-instagram" },
         { name: "Vimeo", href: "/admin/training/vimeo", icon: Film, permission: "training-vimeo" },
         { name: "Outros Vídeos", href: "/admin/training/others", icon: Monitor, permission: "training-others" },
-      ]
-    },
-    
-    // Meus Projetos (NOVO - links externos)
-    { 
-      name: "Meus Projetos", 
-      icon: Briefcase, 
-      permission: "projects-group",
-      type: "group",
-      key: "meus-projetos",
-      submenu: [
-        { 
-          name: "ITL Brasil", 
-          href: "https://itlbrasil.com.br", 
-          icon: Globe, 
-          permission: "project-itl",
-          external: true
-        },
-        { 
-          name: "CDN", 
-          href: "https://cdn.itlbrasil.com.br", 
-          icon: CloudCog, 
-          permission: "project-cdn",
-          external: true
-        },
-        { 
-          name: "CONSABS", 
-          href: "https://consabs.com.br", 
-          icon: Building2, 
-          permission: "project-consabs",
-          external: true
-        },
       ]
     },
     
@@ -305,6 +306,12 @@ const AdminLayout = () => {
           </div>
           
           <div className="flex items-center gap-4">
+            {/* Theme Toggle */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">Tema:</span>
+              <ThemeToggle />
+            </div>
+            
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <User className="h-4 w-4" />
               <span>{user?.email}</span>

@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
+import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { SecureAuthProvider } from "./contexts/SecureAuthContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -222,17 +223,19 @@ const AppRoutes = () => {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <HelmetProvider>
-      <TooltipProvider>
-        <SecureAuthProvider>
-          <ThemeProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <AppRoutes />
-            </BrowserRouter>
-          </ThemeProvider>
-        </SecureAuthProvider>
-      </TooltipProvider>
+      <NextThemesProvider attribute="class" defaultTheme="dark" enableSystem={false}>
+        <TooltipProvider>
+          <SecureAuthProvider>
+            <ThemeProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
+                <AppRoutes />
+              </BrowserRouter>
+            </ThemeProvider>
+          </SecureAuthProvider>
+        </TooltipProvider>
+      </NextThemesProvider>
     </HelmetProvider>
   </QueryClientProvider>
 );
