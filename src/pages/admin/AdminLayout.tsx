@@ -157,6 +157,7 @@ const AdminLayout = () => {
     { name: "Cadastrar Notícias", href: "/admin/articles/new", icon: PlusCircle, permission: "article-editor" },
     { name: "Web Stories", href: "/admin/webstories", icon: BookOpen, permission: "webstories" },
     { name: "Repórter AI", href: "/admin/reporter-ai", icon: Sparkles, permission: "reporter-ai" },
+    { name: "Repórter GPT", href: "https://chatgpt.com/g/g-6900f51c074c819192f61cb9e3f9010f-reporter-ai", icon: ExternalLink, permission: "reporter-ai", external: true },
     { name: "Importar em Massa", href: "/admin/bulk-import", icon: Upload, permission: "bulk-import" },
     
     // Treinamento (NOVO)
@@ -430,27 +431,48 @@ const AdminLayout = () => {
             {navigation.map((item) => {
               // Para itens standalone (não grupos)
               if (!item.type || item.type !== "group") {
-                const isActive = location.pathname === item.href || 
+                const isActive = !item.external && (location.pathname === item.href || 
                   (item.href !== '/admin' && location.pathname.startsWith(item.href!)) ||
-                  (item.submenu && item.submenu.some(sub => location.pathname === sub.href));
+                  (item.submenu && item.submenu.some(sub => location.pathname === sub.href)));
                 
                 return (
                   <div key={item.name}>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <NavLink
-                          to={item.href!}
-                          className={cn(
-                            "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                            isActive
-                              ? "bg-primary text-primary-foreground"
-                              : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
-                            collapsed && "justify-center"
-                          )}
-                        >
-                          <item.icon className="h-4 w-4 flex-shrink-0" />
-                          {!collapsed && <span>{item.name}</span>}
-                        </NavLink>
+                        {item.external ? (
+                          <a
+                            href={item.href!}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={cn(
+                              "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                              "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+                              collapsed && "justify-center"
+                            )}
+                          >
+                            <item.icon className="h-4 w-4 flex-shrink-0" />
+                            {!collapsed && (
+                              <>
+                                <span className="flex-1">{item.name}</span>
+                                <ExternalLink className="h-3 w-3" />
+                              </>
+                            )}
+                          </a>
+                        ) : (
+                          <NavLink
+                            to={item.href!}
+                            className={cn(
+                              "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                              isActive
+                                ? "bg-primary text-primary-foreground"
+                                : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+                              collapsed && "justify-center"
+                            )}
+                          >
+                            <item.icon className="h-4 w-4 flex-shrink-0" />
+                            {!collapsed && <span>{item.name}</span>}
+                          </NavLink>
+                        )}
                       </TooltipTrigger>
                       {collapsed && (
                         <TooltipContent side="right">
