@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -12,13 +14,16 @@ import {
   AlertTriangle,
   FileText,
   Loader2,
-  Check
+  Check,
+  Sparkles,
+  Copy
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useCreateArticle } from "@/hooks/useArticleMutations";
 import { useCategories } from "@/hooks/useCategories";
 import { useAuthors } from "@/hooks/useAuthors";
 import { useArticleRewrite } from "@/hooks/useArticleRewrite";
+import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
 import { 
   FIXED_CATEGORIES, 
@@ -92,10 +97,27 @@ interface ImportResult {
   slug?: string;
 }
 
+interface NewsInput {
+  newsUrl: string;
+  imageUrl: string;
+}
+
 const BulkNewsImport = () => {
+  const [newsInputs, setNewsInputs] = useState<NewsInput[]>([
+    { newsUrl: '', imageUrl: '' },
+    { newsUrl: '', imageUrl: '' },
+    { newsUrl: '', imageUrl: '' },
+    { newsUrl: '', imageUrl: '' },
+    { newsUrl: '', imageUrl: '' }
+  ]);
+  const [generatedJson, setGeneratedJson] = useState("");
+  const [generating, setGenerating] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [copied, setCopied] = useState(false);
+  
   const [jsonInput, setJsonInput] = useState("");
   const [importing, setImporting] = useState(false);
-  const [progress, setProgress] = useState(0);
+  const [importProgress, setImportProgress] = useState(0);
   const [results, setResults] = useState<ImportResult[]>([]);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [rewriteWithAI, setRewriteWithAI] = useState(false);
@@ -107,6 +129,87 @@ const BulkNewsImport = () => {
   const rewriteMutation = useArticleRewrite();
   const { data: categories } = useCategories();
   const { data: authors } = useAuthors();
+
+  const handleGenerateJson = async () => {
+    const validInputs = newsInputs.filter(input => input.newsUrl.trim());
+    
+    if (validInputs.length === 0) {
+      toast({
+        title: "Erro",
+        description: "Forneça pelo menos 1 link de notícia",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setGenerating(true);
+    setProgress(0);
+    const allNews: any[] = [];
+    
+    for (let i = 0; i < validInputs.length; i++) {
+      const { newsUrl, imageUrl } = validInputs[i];
+      
+      try {
+        toast({
+          title: `Processando notícia ${i + 1} de ${validInputs.length}...`,
+          description: "Aguarde enquanto o Repórter AI extrai as informações",
+        });
+        
+        const { data, error } = await supabase.functions.invoke('reporter-ai', {
+          body: { newsUrl, imageUrl: imageUrl || undefined }
+        });
+        
+        if (error) throw error;
+        if (!data.success) throw new Error(data.error);
+        
+        allNews.push(data.json.noticias[0]);
+        
+      } catch (err: any) {
+        console.error(`Erro ao processar ${newsUrl}:`, err);
+        toast({
+          title: `Erro na notícia ${i + 1}`,
+          description: err.message || "Erro ao processar notícia",
+          variant: "destructive"
+        });
+      }
+      
+      setProgress(((i + 1) / validInputs.length) * 100);
+    }
+    
+    const finalJson = {
+      noticias: allNews
+    };
+    
+    setGeneratedJson(JSON.stringify(finalJson, null, 2));
+    setGenerating(false);
+    toast({
+      title: "✅ JSON Gerado!",
+      description: `${allNews.length} notícias processadas com sucesso`,
+    });
+  };
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(generatedJson);
+      setCopied(true);
+      toast({
+        title: "Copiado!",
+        description: "JSON copiado para a área de transferência",
+      });
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível copiar o JSON",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleImportDirectly = () => {
+    setJsonInput(generatedJson);
+    setTimeout(() => handleImport(), 100);
+  };
 
   const handleValidateOnly = () => {
     setValidating(true);
@@ -311,7 +414,7 @@ const BulkNewsImport = () => {
         });
       }
 
-      setProgress(((i + 1) / totalNews) * 100);
+      setImportProgress(((i + 1) / totalNews) * 100);
     }
 
     setResults(importResults);
@@ -336,28 +439,143 @@ const BulkNewsImport = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Importação em Massa de Notícias</h1>
+        <h1 className="text-3xl font-bold flex items-center gap-2">
+          <Sparkles className="h-8 w-8 text-primary" />
+          Repórter AI
+        </h1>
         <p className="text-muted-foreground">
-          Cole o JSON com as notícias para importar em massa
+          Cole o LINK das notícias e abaixo o LINK da imagem
         </p>
       </div>
 
-      {/* Input Section */}
+      {/* Input Section - News URLs */}
       <Card>
         <CardHeader>
-          <CardTitle>Dados JSON</CardTitle>
+          <CardTitle>📋 LINK das Notícias</CardTitle>
           <CardDescription>
-            Cole aqui o JSON contendo as notícias a serem importadas
+            Cole aqui o LINK das matérias e abaixo o LINK da imagem. <strong>Sugestão: cole até 5 links por vez.</strong>
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <Textarea
-            value={jsonInput}
-            onChange={(e) => setJsonInput(e.target.value)}
-            placeholder='{"noticias": [...]}'
-            className="font-mono text-sm min-h-[300px]"
-            disabled={importing}
-          />
+        <CardContent className="space-y-6">
+          {newsInputs.map((input, idx) => (
+            <div key={idx} className="space-y-3 p-4 border rounded-lg bg-card">
+              <Label className="font-semibold text-base">📰 Notícia {idx + 1}</Label>
+              
+              <div className="space-y-2">
+                <Label htmlFor={`news-${idx}`}>Link da Notícia</Label>
+                <Input
+                  id={`news-${idx}`}
+                  type="url"
+                  placeholder="https://agenciabrasil.ebc.com.br/..."
+                  value={input.newsUrl}
+                  onChange={(e) => {
+                    const newInputs = [...newsInputs];
+                    newInputs[idx].newsUrl = e.target.value;
+                    setNewsInputs(newInputs);
+                  }}
+                  disabled={generating}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor={`image-${idx}`}>Link da Imagem (opcional)</Label>
+                <Input
+                  id={`image-${idx}`}
+                  type="url"
+                  placeholder="https://imagens.ebc.com.br/..."
+                  value={input.imageUrl}
+                  onChange={(e) => {
+                    const newInputs = [...newsInputs];
+                    newInputs[idx].imageUrl = e.target.value;
+                    setNewsInputs(newInputs);
+                  }}
+                  disabled={generating}
+                />
+              </div>
+            </div>
+          ))}
+          
+          <Button 
+            onClick={handleGenerateJson}
+            disabled={generating || !newsInputs.some(i => i.newsUrl.trim())}
+            className="w-full"
+            size="lg"
+          >
+            {generating ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Gerando JSON... {Math.round(progress)}%
+              </>
+            ) : (
+              <>
+                <Sparkles className="h-4 w-4 mr-2" />
+                Gerar JSON das {newsInputs.filter(i => i.newsUrl.trim()).length} Notícias
+              </>
+            )}
+          </Button>
+          
+          {generating && (
+            <div className="space-y-2">
+              <Progress value={progress} />
+              <Alert>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <AlertDescription>
+                  Processando notícias com Repórter AI. Isso pode levar alguns segundos...
+                </AlertDescription>
+              </Alert>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Generated JSON Section */}
+      {generatedJson && (
+        <Card>
+          <CardHeader>
+            <div className="flex justify-between items-center">
+              <CardTitle>📋 JSON Gerado</CardTitle>
+              <div className="flex gap-2">
+                <Button onClick={handleCopy} variant="outline" size="sm">
+                  {copied ? <Check className="h-4 w-4 mr-2" /> : <Copy className="h-4 w-4 mr-2" />}
+                  {copied ? "Copiado!" : "Copiar"}
+                </Button>
+                <Button onClick={handleImportDirectly} size="sm">
+                  <Upload className="h-4 w-4 mr-2" />
+                  Importar Diretamente
+                </Button>
+              </div>
+            </div>
+            <CardDescription>
+              Após gerar o JSON, o Repórter AI criou um arquivo no formato: <code className="bg-muted px-1">{"{"}"noticias": [{"{...}"}]{"}"}</code>
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Textarea
+              value={generatedJson}
+              readOnly
+              className="font-mono text-xs min-h-[400px]"
+            />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Import Section - Hidden until JSON is available */}
+      {jsonInput && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Importar Notícias</CardTitle>
+            <CardDescription>
+              Valide e importe as notícias geradas
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Textarea
+              value={jsonInput}
+              onChange={(e) => setJsonInput(e.target.value)}
+              placeholder='{"noticias": [...]}'
+              className="font-mono text-sm min-h-[200px]"
+              disabled={importing}
+            />
 
           {validationError && (
             <Alert variant="destructive">
@@ -422,13 +640,14 @@ const BulkNewsImport = () => {
             <div className="space-y-2">
               <div className="flex justify-between text-sm text-muted-foreground">
                 <span>Importando...</span>
-                <span>{Math.round(progress)}%</span>
+                <span>{Math.round(importProgress)}%</span>
               </div>
-              <Progress value={progress} />
+              <Progress value={importProgress} />
             </div>
           )}
         </CardContent>
       </Card>
+      )}
 
       {/* Validation Report */}
       {validationReport && (
@@ -548,6 +767,53 @@ const BulkNewsImport = () => {
       )}
 
       {/* Documentation */}
+      <Card className="bg-blue-500/5 border-blue-500/20">
+        <CardHeader>
+          <CardTitle className="text-blue-600 dark:text-blue-400">
+            📖 Formato do JSON Gerado pelo Repórter AI
+          </CardTitle>
+          <CardDescription>
+            O Repórter AI irá gerar automaticamente um JSON no seguinte formato
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm">
+            Após processar os links fornecidos, o Repórter AI gerará um JSON estruturado com todas as informações extraídas das notícias:
+          </p>
+          <pre className="text-xs bg-background/80 p-4 rounded overflow-auto max-h-96 border">
+{`{
+  "noticias": [
+    {
+      "categoria": "Economia",
+      "titulo": "CMN restringe linha especial de R$ 12 bilhões para produtores do RS",
+      "slug": "cmn-restringe-linha-especial-de-r-12-bilhoes-produtores-do-rs",
+      "resumo": "Conselho Monetário Nacional limita acesso à linha emergencial...",
+      "conteudo": "<p>O <strong>Conselho Monetário Nacional (CMN)</strong>...</p>",
+      "fonte": "https://agenciabrasil.ebc.com.br/economia/noticia/2025-10/...",
+      "imagem": {
+        "hero": "https://imagens.ebc.com.br/.../1170x700/...",
+        "og": "https://imagens.ebc.com.br/.../1200x630/...",
+        "card": "https://imagens.ebc.com.br/.../800x450/...",
+        "alt": "Produtor rural observa lavoura danificada por enchentes...",
+        "credito": "Foto: Fernando Frazão/Agência Brasil"
+      },
+      "tags": [
+        "CMN", "Rio Grande do Sul", "enchentes", "crédito rural",
+        "Fernando Haddad", "Ministério da Fazenda", "agricultura",
+        "economia regional", "linha emergencial", "produtores rurais",
+        "recuperação econômica", "Banco Central"
+      ],
+      "seo": {
+        "meta_titulo": "CMN restringe linha de crédito emergencial no RS",
+        "meta_descricao": "Conselho Monetário Nacional limita linha de R$ 12..."
+      }
+    }
+  ]
+}`}
+          </pre>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle>📖 Guia de Importação JSON</CardTitle>
@@ -556,36 +822,6 @@ const BulkNewsImport = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Exemplo Principal */}
-          <div>
-            <h3 className="font-semibold mb-2">✨ Exemplo Completo</h3>
-            <pre className="text-xs bg-muted p-4 rounded overflow-auto">
-{`{
-  "noticias": [
-    {
-      "categoria": "Política",
-      "titulo": "Congresso aprova nova lei de educação digital",
-      "slug": "congresso-aprova-lei-educacao-digital",
-      "resumo": "Projeto estabelece diretrizes para ensino de tecnologia nas escolas públicas de todo o país.",
-      "conteudo": "<p>O Congresso Nacional aprovou nesta terça-feira...</p><p>A medida entrará em vigor...</p>",
-      "fonte": "https://agenciabrasil.ebc.com.br/educacao/noticia/2025-10/congresso-aprova-lei",
-      "imagem": {
-        "hero": "https://cdn.exemplo.com/congresso-votacao-1200x675.jpg",
-        "og": "https://cdn.exemplo.com/congresso-votacao-1200x630.jpg",
-        "card": "https://cdn.exemplo.com/congresso-votacao-800x450.jpg",
-        "alt": "Plenário do Congresso durante votação da lei de educação digital"
-      },
-      "credito": "Agência Brasil/EBC",
-      "tags": ["política", "educação", "congresso nacional", "tecnologia", "ensino público", "legislação", "brasil", "deputados", "senado", "educação digital", "escolas", "aprovação"],
-      "seo": {
-        "meta_titulo": "Congresso aprova lei de educação digital nas escolas",
-        "meta_descricao": "Nova legislação estabelece diretrizes para ensino de tecnologia nas escolas públicas brasileiras."
-      }
-    }
-  ]
-}`}
-            </pre>
-          </div>
 
           {/* Formatos de Imagem */}
           <div>
