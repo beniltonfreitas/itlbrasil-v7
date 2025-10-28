@@ -1,0 +1,192 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const { newsUrl, imageUrl } = await req.json();
+    
+    if (!newsUrl) {
+      return new Response(
+        JSON.stringify({ error: 'URL da notícia é obrigatória' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    if (!LOVABLE_API_KEY) {
+      console.error('LOVABLE_API_KEY not configured');
+      return new Response(
+        JSON.stringify({ error: 'Serviço não configurado corretamente' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log('Fetching article from:', newsUrl);
+
+    // Fetch the article content
+    let articleContent = '';
+    try {
+      const articleResponse = await fetch(newsUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        }
+      });
+      
+      if (!articleResponse.ok) {
+        throw new Error(`Failed to fetch article: ${articleResponse.status}`);
+      }
+      
+      articleContent = await articleResponse.text();
+    } catch (error) {
+      console.error('Error fetching article:', error);
+      return new Response(
+        JSON.stringify({ error: 'Não foi possível acessar a URL da notícia. Verifique se a URL está correta e acessível.' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Generate JSON using Lovable AI
+    const systemPrompt = `Você é um assistente especializado em extrair e formatar notícias jornalísticas.
+Extraia as informações da página HTML fornecida e retorne SOMENTE um JSON válido no formato especificado.
+
+IMPORTANTE:
+1. O campo "imagem" deve ser uma STRING (URL), NÃO um objeto
+2. O campo "conteudo" deve ser uma STRING em HTML, NÃO um array
+3. O campo "imagens_adicionais" deve ser um array de strings (URLs), ou omitido se não houver
+4. Gere EXATAMENTE 12 tags relevantes
+5. NÃO inclua menções ao WhatsApp no conteúdo
+6. Use HTML semântico: <p>, <h2>, <h3>, <blockquote>, <strong>, <ul><li>
+7. O slug deve ser URL-friendly (minúsculas, sem acentos, hífens)
+
+Formato JSON esperado:
+{
+  "noticias": [{
+    "titulo": "string",
+    "slug": "string-url-friendly",
+    "categoria": "string",
+    "resumo": "string (max 160 chars)",
+    "conteudo": "<p>HTML string</p>",
+    "fonte": "string",
+    "imagem": "URL_STRING",
+    "imagem_alt": "string (10-140 chars)",
+    "imagem_credito": "string",
+    "imagens_adicionais": ["url1", "url2"],
+    "featured": true,
+    "tags": ["tag1", "tag2", ..., "tag12"],
+    "seo": {
+      "meta_titulo": "string (max 60 chars)",
+      "meta_descricao": "string (max 160 chars)"
+    }
+  }]
+}`;
+
+    const userPrompt = `Extraia e formate a notícia da seguinte página HTML.
+${imageUrl ? `Use esta imagem como imagem principal: ${imageUrl}` : 'Extraia a imagem principal da página.'}
+
+Retorne APENAS o JSON, sem texto adicional antes ou depois.
+
+HTML da página:
+${articleContent.slice(0, 50000)}`; // Limit content to avoid token limits
+
+    console.log('Calling Lovable AI...');
+
+    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-2.5-flash',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+        temperature: 0.3
+      }),
+    });
+
+    if (!aiResponse.ok) {
+      const errorText = await aiResponse.text();
+      console.error('Lovable AI error:', aiResponse.status, errorText);
+      
+      if (aiResponse.status === 429) {
+        return new Response(
+          JSON.stringify({ error: 'Limite de requisições excedido. Tente novamente em alguns instantes.' }),
+          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      if (aiResponse.status === 402) {
+        return new Response(
+          JSON.stringify({ error: 'Créditos insuficientes. Adicione créditos ao seu workspace Lovable.' }),
+          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      throw new Error(`AI API error: ${aiResponse.status}`);
+    }
+
+    const aiData = await aiResponse.json();
+    const generatedText = aiData.choices?.[0]?.message?.content;
+
+    if (!generatedText) {
+      throw new Error('No content generated by AI');
+    }
+
+    console.log('AI Response received, parsing JSON...');
+
+    // Extract JSON from response (in case AI added extra text)
+    let jsonMatch = generatedText.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      console.error('No JSON found in AI response:', generatedText);
+      throw new Error('AI não retornou um JSON válido');
+    }
+
+    const parsedJson = JSON.parse(jsonMatch[0]);
+
+    // Validate the structure
+    if (!parsedJson.noticias || !Array.isArray(parsedJson.noticias) || parsedJson.noticias.length === 0) {
+      throw new Error('JSON inválido: campo "noticias" não encontrado ou vazio');
+    }
+
+    // Override image if provided by user
+    if (imageUrl && parsedJson.noticias[0]) {
+      parsedJson.noticias[0].imagem = imageUrl;
+    }
+
+    console.log('Successfully generated JSON for article');
+
+    return new Response(
+      JSON.stringify({ 
+        success: true,
+        json: parsedJson 
+      }),
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      }
+    );
+
+  } catch (error) {
+    console.error('Error in reporter-ai function:', error);
+    return new Response(
+      JSON.stringify({ 
+        error: error instanceof Error ? error.message : 'Erro desconhecido ao processar a notícia',
+        details: error instanceof Error ? error.stack : undefined
+      }),
+      { 
+        status: 500, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      }
+    );
+  }
+});

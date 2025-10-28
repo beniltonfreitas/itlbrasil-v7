@@ -7,7 +7,7 @@ export interface WebStory {
   title: string;
   slug: string;
   cover_image?: string;
-  published: boolean;
+  status: 'draft' | 'published';
   created_at: string;
   updated_at: string;
 }
@@ -130,10 +130,10 @@ export const useToggleWebStoryPublish = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, published }: { id: string; published: boolean }) => {
+    mutationFn: async ({ id, status }: { id: string; status: 'draft' | 'published' }) => {
       const { data, error } = await supabase
         .from('webstories')
-        .update({ published })
+        .update({ status })
         .eq('id', id)
         .select()
         .single();
@@ -143,7 +143,7 @@ export const useToggleWebStoryPublish = () => {
     },
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['webstories'] });
-      toast.success(variables.published ? 'WebStory publicada' : 'WebStory despublicada');
+      toast.success(variables.status === 'published' ? 'WebStory publicada' : 'WebStory despublicada');
     },
     onError: (error: Error) => {
       toast.error(`Erro: ${error.message}`);

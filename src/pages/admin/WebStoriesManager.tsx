@@ -35,12 +35,13 @@ const WebStoriesManager = () => {
     await deleteMutation.mutateAsync(id);
   };
 
-  const handleTogglePublish = async (id: string, currentlyPublished: boolean) => {
-    await togglePublishMutation.mutateAsync({ id, published: !currentlyPublished });
+  const handleTogglePublish = async (id: string, currentStatus: 'draft' | 'published') => {
+    const newStatus = currentStatus === 'published' ? 'draft' : 'published';
+    await togglePublishMutation.mutateAsync({ id, status: newStatus });
   };
 
-  const getStatusBadge = (published: boolean) => {
-    if (published) {
+  const getStatusBadge = (status: 'draft' | 'published') => {
+    if (status === 'published') {
       return <Badge className="bg-green-100 text-green-800">Publicado</Badge>;
     }
     return <Badge variant="secondary">Rascunho</Badge>;
@@ -112,7 +113,7 @@ const WebStoriesManager = () => {
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
                         <h3 className="font-semibold text-lg">{story.title}</h3>
-                        {getStatusBadge(story.published)}
+                        {getStatusBadge(story.status)}
                       </div>
                       
                       <div className="flex items-center gap-4 text-sm text-muted-foreground">
@@ -129,10 +130,10 @@ const WebStoriesManager = () => {
                       <Button 
                         variant="outline" 
                         size="sm"
-                        onClick={() => handleTogglePublish(story.id, story.published)}
+                        onClick={() => handleTogglePublish(story.id, story.status)}
                         disabled={togglePublishMutation.isPending}
                       >
-                        {story.published ? (
+                        {story.status === 'published' ? (
                           <EyeOff className="h-4 w-4" />
                         ) : (
                           <Eye className="h-4 w-4" />

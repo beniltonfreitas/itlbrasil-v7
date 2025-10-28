@@ -156,6 +156,7 @@ const AdminLayout = () => {
     { name: "Todas as Notícias", href: "/admin/articles", icon: FileText, permission: "articles" },
     { name: "Cadastrar Notícias", href: "/admin/articles/new", icon: PlusCircle, permission: "article-editor" },
     { name: "Web Stories", href: "/admin/webstories", icon: BookOpen, permission: "webstories" },
+    { name: "Repórter AI", href: "/admin/reporter-ai", icon: Sparkles, permission: "reporter-ai" },
     { name: "Importar em Massa", href: "/admin/bulk-import", icon: Upload, permission: "bulk-import" },
     
     // Treinamento (NOVO)

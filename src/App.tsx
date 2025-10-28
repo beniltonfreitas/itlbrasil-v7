@@ -55,6 +55,7 @@ import CommunityChat from "./pages/admin/CommunityChat";
 import { ImageManager } from "./pages/admin/ImageManager";
 import { AdsManager } from "./pages/admin/AdsManager";
 import BannersManager from "./pages/admin/BannersManager";
+import ReporterAI from "./pages/admin/ReporterAI";
 
 import JornalistaProTools from "./pages/admin/JornalistaProTools";
 import StudioPlaceholder from "./pages/admin/StudioPlaceholder";
@@ -192,6 +193,9 @@ const AppRoutes = () => {
         <Route path="webstories" element={<WebStoriesManager />} />
         <Route path="webstories/new" element={<WebStoriesManager />} />
         <Route path="webstories/:id/edit" element={<WebStoriesManager />} />
+        
+        {/* Reporter AI Route */}
+        <Route path="reporter-ai" element={<ReporterAI />} />
         
         {/* RSS Import Route */}
         <Route path="import" element={<RSSImportManager />} />

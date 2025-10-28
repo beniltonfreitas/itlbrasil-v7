@@ -37,3 +37,6 @@ verify_jwt = false
 
 [functions.vpn-cleanup-guest]
 verify_jwt = false
+
+[functions.reporter-ai]
+verify_jwt = true
