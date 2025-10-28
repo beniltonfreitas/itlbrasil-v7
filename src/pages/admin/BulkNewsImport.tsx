@@ -142,9 +142,35 @@ const BulkNewsImport = () => {
       return;
     }
     
+    // Validar URLs antes de processar
+    const invalidUrls: string[] = [];
+    validInputs.forEach((input, idx) => {
+      try {
+        new URL(input.newsUrl);
+        if (input.imageUrl) new URL(input.imageUrl);
+      } catch {
+        invalidUrls.push(`Notícia ${idx + 1}: URL inválida`);
+      }
+    });
+
+    if (invalidUrls.length > 0) {
+      toast({
+        title: "URLs inválidas detectadas",
+        description: invalidUrls.join(', '),
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setGenerating(true);
     setProgress(0);
     const allNews: any[] = [];
+    
+    // Mostrar tempo estimado
+    toast({
+      title: `Processando ${validInputs.length} notícias`,
+      description: `Tempo estimado: ${validInputs.length * 15}s. Aguarde...`
+    });
     
     for (let i = 0; i < validInputs.length; i++) {
       const { newsUrl, imageUrl } = validInputs[i];
@@ -155,21 +181,61 @@ const BulkNewsImport = () => {
           description: "Aguarde enquanto o Repórter AI extrai as informações",
         });
         
+        console.log('🔗 Calling reporter-ai with:', { newsUrl, imageUrl });
+        
         const { data, error } = await supabase.functions.invoke('reporter-ai', {
           body: { newsUrl, imageUrl: imageUrl || undefined }
         });
         
-        if (error) throw error;
-        if (!data.success) throw new Error(data.error);
+        console.log('📦 Response:', { data, error });
+        
+        if (error) {
+          console.error('❌ Supabase error:', error);
+          throw new Error(`Erro na chamada: ${error.message}`);
+        }
+        
+        if (!data) {
+          throw new Error('Resposta vazia da edge function');
+        }
+        
+        if (!data.success) {
+          throw new Error(data.error || 'Edge function retornou erro sem mensagem');
+        }
+        
+        if (!data.json?.noticias?.[0]) {
+          throw new Error('JSON retornado não contém notícias');
+        }
         
         allNews.push(data.json.noticias[0]);
         
-      } catch (err: any) {
-        console.error(`Erro ao processar ${newsUrl}:`, err);
         toast({
-          title: `Erro na notícia ${i + 1}`,
-          description: err.message || "Erro ao processar notícia",
-          variant: "destructive"
+          title: `✅ Notícia ${i + 1} processada`,
+          description: data.json.noticias[0].titulo.substring(0, 50) + '...',
+        });
+        
+      } catch (err: any) {
+        console.error(`❌ Erro ao processar ${newsUrl}:`, err);
+        
+        // Detectar erros comuns e fornecer mensagens específicas
+        let errorMessage = err.message || "Erro desconhecido";
+        
+        if (errorMessage.includes('LOVABLE_API_KEY')) {
+          errorMessage = '⚠️ LOVABLE_API_KEY não configurada. Configure em Cloud > Secrets';
+        } else if (errorMessage.includes('Failed to fetch') || errorMessage.includes('fetch')) {
+          errorMessage = '🌐 Erro de rede. Verifique se a URL está acessível';
+        } else if (errorMessage.includes('401') || errorMessage.includes('unauthorized')) {
+          errorMessage = '🔒 Erro de autenticação. Faça login novamente';
+        } else if (errorMessage.includes('429')) {
+          errorMessage = '⏱️ Limite de requisições excedido. Aguarde e tente novamente';
+        } else if (errorMessage.includes('402')) {
+          errorMessage = '💳 Créditos insuficientes. Adicione créditos no Lovable';
+        }
+        
+        toast({
+          title: `❌ Erro na notícia ${i + 1}`,
+          description: errorMessage,
+          variant: "destructive",
+          duration: 8000
         });
       }
       
@@ -182,10 +248,63 @@ const BulkNewsImport = () => {
     
     setGeneratedJson(JSON.stringify(finalJson, null, 2));
     setGenerating(false);
-    toast({
-      title: "✅ JSON Gerado!",
-      description: `${allNews.length} notícias processadas com sucesso`,
-    });
+    
+    if (allNews.length > 0) {
+      toast({
+        title: "✅ JSON Gerado!",
+        description: `${allNews.length} de ${validInputs.length} notícias geradas com sucesso`,
+      });
+    } else {
+      toast({
+        title: "❌ Nenhuma notícia gerada",
+        description: "Verifique os erros acima e a configuração do Lovable Cloud.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleTestConnection = async () => {
+    try {
+      toast({
+        title: "🔍 Testando conexão com Repórter AI...",
+        description: "Aguarde..."
+      });
+      
+      const { data, error } = await supabase.functions.invoke('reporter-ai', {
+        body: { 
+          newsUrl: 'https://agenciabrasil.ebc.com.br/geral/noticia/2025-10/teste',
+          imageUrl: undefined 
+        }
+      });
+      
+      console.log('🧪 Test response:', { data, error });
+      
+      if (error) {
+        toast({
+          title: "❌ Erro na conexão",
+          description: error.message,
+          variant: "destructive",
+          duration: 8000
+        });
+      } else if (data?.success) {
+        toast({
+          title: "✅ Conexão OK!",
+          description: "Edge function está funcionando corretamente."
+        });
+      } else {
+        toast({
+          title: "⚠️ Conexão OK",
+          description: "Edge function respondeu, mas houve erro ao processar URL de teste (normal)"
+        });
+      }
+    } catch (err: any) {
+      toast({
+        title: "❌ Erro inesperado",
+        description: err.message,
+        variant: "destructive",
+        duration: 8000
+      });
+    }
   };
 
   const handleCopy = async () => {
@@ -495,6 +614,17 @@ const BulkNewsImport = () => {
             </div>
           ))}
           
+          <div className="flex gap-2">
+            <Button 
+              onClick={handleTestConnection}
+              variant="outline"
+              size="sm"
+              disabled={generating}
+            >
+              🔍 Testar Conexão
+            </Button>
+          </div>
+          
           <Button 
             onClick={handleGenerateJson}
             disabled={generating || !newsInputs.some(i => i.newsUrl.trim())}
@@ -520,7 +650,11 @@ const BulkNewsImport = () => {
               <Alert>
                 <Loader2 className="h-4 w-4 animate-spin" />
                 <AlertDescription>
-                  Processando notícias com Repórter AI. Isso pode levar alguns segundos...
+                  Processando notícia {Math.floor((progress / 100) * newsInputs.filter(i => i.newsUrl.trim()).length) + 1} de {newsInputs.filter(i => i.newsUrl.trim()).length}...
+                  <br />
+                  <span className="text-xs text-muted-foreground">
+                    Cada notícia leva ~10-20 segundos. Aguarde...
+                  </span>
                 </AlertDescription>
               </Alert>
             </div>

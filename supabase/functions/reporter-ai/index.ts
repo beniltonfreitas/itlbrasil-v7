@@ -30,6 +30,13 @@ serve(async (req) => {
       );
     }
 
+    console.log('📊 Request details:', {
+      newsUrl,
+      imageUrl,
+      hasApiKey: !!LOVABLE_API_KEY,
+      apiKeyPrefix: LOVABLE_API_KEY?.substring(0, 10) + '...'
+    });
+
     console.log('🔗 Fetching article from:', newsUrl);
 
     // Validate URL format
@@ -280,6 +287,13 @@ ${articleContent.slice(0, 50000)}`; // Limit content to avoid token limits
         credito: noticia.imagem?.credito || 'Divulgação'
       };
     }
+
+    console.log('✅ JSON validated successfully:', {
+      titulo: noticia.titulo,
+      categoria: noticia.categoria,
+      imagemType: typeof noticia.imagem,
+      tagsCount: noticia.tags?.length
+    });
 
     console.log('✅ Successfully generated and validated JSON for article');
 
