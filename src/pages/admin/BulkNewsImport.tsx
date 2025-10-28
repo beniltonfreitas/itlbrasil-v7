@@ -131,6 +131,17 @@ const BulkNewsImport = () => {
   const { data: authors } = useAuthors();
 
   const handleGenerateJson = async () => {
+    // Verificar se está logado antes de começar
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      toast({
+        title: "🔒 Sessão expirada",
+        description: "Faça login novamente para continuar",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     const validInputs = newsInputs.filter(input => input.newsUrl.trim());
     
     if (validInputs.length === 0) {
@@ -189,22 +200,30 @@ const BulkNewsImport = () => {
         
         console.log('📦 Response:', { data, error });
         
-        if (error) {
-          console.error('❌ Supabase error:', error);
-          throw new Error(`Erro na chamada: ${error.message}`);
+      if (error) {
+        console.error('❌ Supabase error:', error);
+        
+        let errorDetail = error.message;
+        if (errorDetail.includes('Failed to send a request')) {
+          errorDetail = 'Edge Function não está acessível. Verifique se reporter-ai está implantada e se Lovable Cloud está ativo.';
+        } else if (errorDetail.includes('FunctionsRelayError') || errorDetail.includes('FunctionsHttpError')) {
+          errorDetail = 'Erro de comunicação com a função. A função pode não estar implantada corretamente.';
         }
         
-        if (!data) {
-          throw new Error('Resposta vazia da edge function');
-        }
-        
-        if (!data.success) {
-          throw new Error(data.error || 'Edge function retornou erro sem mensagem');
-        }
-        
-        if (!data.json?.noticias?.[0]) {
-          throw new Error('JSON retornado não contém notícias');
-        }
+        throw new Error(`Erro na chamada: ${errorDetail}`);
+      }
+      
+      if (!data) {
+        throw new Error('Resposta vazia da edge function - a função pode ter falhado sem retornar erro');
+      }
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Edge function retornou erro sem mensagem');
+      }
+      
+      if (!data.json?.noticias?.[0]) {
+        throw new Error('JSON retornado não contém notícias válidas');
+      }
         
         allNews.push(data.json.noticias[0]);
         
@@ -265,10 +284,24 @@ const BulkNewsImport = () => {
 
   const handleTestConnection = async () => {
     try {
-      toast({
+      toast({ 
         title: "🔍 Testando conexão com Repórter AI...",
-        description: "Aguarde..."
+        description: "Verificando status da edge function..."
       });
+      
+      console.log('🔗 Testing connection to reporter-ai...');
+      
+      const { data: { session } } = await supabase.auth.getSession();
+      console.log('🔑 Has auth session:', !!session);
+      
+      if (!session) {
+        toast({
+          title: "🔒 Sessão expirada",
+          description: "Faça login novamente para testar a conexão",
+          variant: "destructive"
+        });
+        return;
+      }
       
       const { data, error } = await supabase.functions.invoke('reporter-ai', {
         body: { 
@@ -277,32 +310,64 @@ const BulkNewsImport = () => {
         }
       });
       
-      console.log('🧪 Test response:', { data, error });
+      console.log('📦 Full response:', { data, error });
       
       if (error) {
+        console.error('❌ Error details:', {
+          message: error.message,
+          name: error.name,
+          context: error.context
+        });
+        
+        let errorMsg = error.message;
+        let troubleshootingSteps = '';
+        
+        // Detectar tipos específicos de erro
+        if (errorMsg.includes('Failed to send a request')) {
+          troubleshootingSteps = '\n\n🔧 Possíveis causas:\n' +
+                     '1. Edge function reporter-ai não está implantada no Supabase\n' +
+                     '2. Lovable Cloud não está ativo\n' +
+                     '3. LOVABLE_API_KEY não está configurada nas Secrets\n' +
+                     '4. Problema de rede ou firewall';
+          errorMsg = '🚫 Não foi possível conectar à edge function';
+        } else if (errorMsg.includes('FunctionsRelayError') || errorMsg.includes('FunctionsHttpError')) {
+          troubleshootingSteps = '\n\n🔧 A função pode não estar implantada corretamente ou está com erro interno';
+          errorMsg = '🔌 Erro de comunicação com a função';
+        } else if (errorMsg.includes('401') || errorMsg.includes('unauthorized')) {
+          troubleshootingSteps = '\n\n🔧 Faça logout e login novamente';
+          errorMsg = '🔒 Erro de autenticação';
+        }
+        
         toast({
           title: "❌ Erro na conexão",
-          description: error.message,
+          description: errorMsg + troubleshootingSteps,
           variant: "destructive",
-          duration: 8000
+          duration: 15000
         });
       } else if (data?.success) {
+        console.log('✅ Connection successful, response:', data);
         toast({
-          title: "✅ Conexão OK!",
-          description: "Edge function está funcionando corretamente."
+          title: "✅ Conexão Estabelecida!",
+          description: "A edge function reporter-ai está funcionando corretamente. Você pode gerar notícias normalmente.",
+          duration: 5000
         });
       } else {
+        console.log('⚠️ Partial success:', data);
         toast({
-          title: "⚠️ Conexão OK",
-          description: "Edge function respondeu, mas houve erro ao processar URL de teste (normal)"
+          title: "⚠️ Conexão Parcial",
+          description: data?.error ? 
+            `Função conectou mas retornou erro: ${data.error}` : 
+            "Edge function respondeu, mas houve erro ao processar a URL de teste (isso é normal para URLs de teste)",
+          duration: 8000
         });
       }
     } catch (err: any) {
+      console.error('💥 Unexpected error:', err);
       toast({
-        title: "❌ Erro inesperado",
-        description: err.message,
+        title: "❌ Erro Inesperado",
+        description: err.message || 'Erro desconhecido ao testar conexão. Verifique o console do navegador.',
         variant: "destructive",
-        duration: 8000
+        duration: 10000
       });
     }
   };
