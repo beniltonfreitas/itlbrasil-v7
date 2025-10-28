@@ -108,23 +108,45 @@ export const validateBulkImportJSON = (jsonInput: string): {
         if (tagCount < 12) report.valid = false;
       }
       
-      // Validate image HTTPS
-      if (typeof noticia.imagem === 'string' && !noticia.imagem.startsWith('https://')) {
-        report.issues.push({
-          severity: 'error',
-          message: `URL de imagem não usa HTTPS - "${noticia.titulo}"`,
-          newsIndex: idx
-        });
-        report.valid = false;
-      } else if (typeof noticia.imagem === 'object') {
-        const imgObj = noticia.imagem as any;
-        if (!imgObj.hero?.startsWith('https://') || !imgObj.og?.startsWith('https://') || !imgObj.card?.startsWith('https://')) {
+      // Validate image format and HTTPS
+      if (typeof noticia.imagem === 'string') {
+        // String format (legacy)
+        if (!noticia.imagem.startsWith('https://')) {
           report.issues.push({
             severity: 'error',
-            message: `Todas as URLs de imagem devem usar HTTPS - "${noticia.titulo}"`,
+            message: `URL de imagem não usa HTTPS - "${noticia.titulo}"`,
             newsIndex: idx
           });
           report.valid = false;
+        }
+        report.issues.push({
+          severity: 'info',
+          message: `Formato simples de imagem detectado. Considere usar objeto com hero/og/card - "${noticia.titulo}"`,
+          newsIndex: idx
+        });
+      } else if (typeof noticia.imagem === 'object') {
+        // Object format (preferred)
+        const imgObj = noticia.imagem as any;
+        const requiredImgFields = ['hero', 'og', 'card', 'alt', 'credito'];
+        const missingImgFields = requiredImgFields.filter(f => !imgObj[f]);
+        
+        if (missingImgFields.length > 0) {
+          report.issues.push({
+            severity: 'error',
+            message: `Objeto imagem incompleto (faltam: ${missingImgFields.join(', ')}) - "${noticia.titulo}"`,
+            newsIndex: idx
+          });
+          report.valid = false;
+        } else {
+          // Validate HTTPS for all image URLs
+          if (!imgObj.hero?.startsWith('https://') || !imgObj.og?.startsWith('https://') || !imgObj.card?.startsWith('https://')) {
+            report.issues.push({
+              severity: 'error',
+              message: `Todas as URLs de imagem devem usar HTTPS - "${noticia.titulo}"`,
+              newsIndex: idx
+            });
+            report.valid = false;
+          }
         }
       }
       

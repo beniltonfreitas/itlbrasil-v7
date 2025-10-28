@@ -249,7 +249,9 @@ const ReporterAI = () => {
             <ul className="space-y-2 text-xs">
               <li className="flex items-start gap-2">
                 <code className="bg-muted px-2 py-0.5 rounded font-mono">imagem</code>
-                <span className="text-muted-foreground">String com URL da imagem</span>
+                <span className="text-muted-foreground">
+                  Objeto com hero, og, card (URLs HTTPS), alt e credito
+                </span>
               </li>
               <li className="flex items-start gap-2">
                 <code className="bg-muted px-2 py-0.5 rounded font-mono">conteudo</code>
@@ -261,7 +263,9 @@ const ReporterAI = () => {
               </li>
               <li className="flex items-start gap-2">
                 <code className="bg-muted px-2 py-0.5 rounded font-mono">categoria</code>
-                <span className="text-muted-foreground">politica, economia, tecnologia, esportes, cultura, saude, educacao, internacional, opiniao, geral</span>
+                <span className="text-muted-foreground">
+                  Política, Economia, Tecnologia, Esportes, Cultura, Saúde, Educação, Internacional, Opinião, Geral, Segurança, Meio Ambiente
+                </span>
               </li>
             </ul>
           </div>
