@@ -11,7 +11,8 @@ import {
   XCircle, 
   AlertTriangle,
   FileText,
-  Loader2
+  Loader2,
+  Check
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useCreateArticle } from "@/hooks/useArticleMutations";
@@ -29,8 +30,10 @@ import {
   normalizeImageInput,
   parseTags,
   generateMissingTags,
+  ensureUniqueSlug,
   type ArticleImageObject
 } from "@/lib/newsUtils";
+import { validateBulkImportJSON, type ValidationReport } from "@/lib/bulkImportValidator";
 
 // Image object schema
 const imageObjectSchema = z.object({
@@ -96,12 +99,47 @@ const BulkNewsImport = () => {
   const [results, setResults] = useState<ImportResult[]>([]);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [rewriteWithAI, setRewriteWithAI] = useState(false);
+  const [validationReport, setValidationReport] = useState<ValidationReport | null>(null);
+  const [validating, setValidating] = useState(false);
 
   const { toast } = useToast();
   const createArticle = useCreateArticle();
   const rewriteMutation = useArticleRewrite();
   const { data: categories } = useCategories();
   const { data: authors } = useAuthors();
+
+  const handleValidateOnly = () => {
+    setValidating(true);
+    setValidationReport(null);
+    setValidationError(null);
+    
+    try {
+      const result = validateBulkImportJSON(jsonInput);
+      setValidationReport(result.report);
+      
+      if (result.success && result.report.valid) {
+        toast({
+          title: "✅ JSON válido!",
+          description: `${result.report.totalNews} notícia(s) pronta(s) para importar.`,
+        });
+      } else {
+        toast({
+          title: "❌ JSON inválido",
+          description: "Verifique os erros abaixo.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      setValidationError("Erro ao validar JSON");
+      toast({
+        title: "Erro",
+        description: "Erro ao validar JSON",
+        variant: "destructive"
+      });
+    } finally {
+      setValidating(false);
+    }
+  };
 
   const validateJSON = () => {
     try {
@@ -191,7 +229,7 @@ const BulkNewsImport = () => {
         console.log('✓ Categoria encontrada:', noticia.categoria, '→', categoryId);
         
         // Auto-generate slug if missing
-        const finalSlug = noticia.slug || generateSlug(noticia.titulo);
+        const finalSlug = await ensureUniqueSlug(noticia.slug || generateSlug(noticia.titulo));
         console.log('✓ Slug gerado:', finalSlug);
         
         // Handle AI rewriting if enabled and source available

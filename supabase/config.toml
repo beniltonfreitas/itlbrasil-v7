@@ -40,3 +40,13 @@ verify_jwt = false
 
 [functions.reporter-ai]
 verify_jwt = true
+
+[functions.reporter-queue]
+verify_jwt = true
+
+[functions.reporter-worker]
+verify_jwt = false
+
+# Cron job for reporter-worker: Run every 2 minutes
+[cron."reporter-worker"]
+schedule = "*/2 * * * *"

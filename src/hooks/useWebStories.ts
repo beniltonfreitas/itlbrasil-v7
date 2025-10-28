@@ -8,7 +8,13 @@ export interface WebStory {
   slug: string;
   description: string;
   publisher_logo: string;
-  published: boolean;
+  status: 'rascunho' | 'publicado';
+  cover_image?: string;
+  cover_alt?: string;
+  cover_credit?: string;
+  category?: string;
+  tags?: string[];
+  pages?: any[];
   author_id: string;
   created_at: string;
   updated_at: string;
@@ -33,7 +39,13 @@ export const useWebStories = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data as WebStory[];
+      
+      // Map published (boolean) to status (enum) for backward compatibility
+      // Until migration is applied, database still has 'published' field
+      return (data || []).map((item: any) => ({
+        ...item,
+        status: item.status || (item.published ? 'publicado' : 'rascunho')
+      })) as WebStory[];
     },
   });
 };
@@ -86,9 +98,15 @@ export const useUpdateWebStory = () => {
 
   return useMutation({
     mutationFn: async ({ id, ...data }: Partial<WebStory> & { id: string }) => {
+      // Map status back to published for backward compatibility
+      const updateData: any = { ...data };
+      if ('status' in updateData) {
+        updateData.published = updateData.status === 'publicado';
+      }
+      
       const { data: webstory, error } = await supabase
         .from('webstories')
-        .update(data)
+        .update(updateData)
         .eq('id', id)
         .select()
         .single();
@@ -132,10 +150,14 @@ export const useToggleWebStoryPublish = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, published }: { id: string; published: boolean }) => {
+    mutationFn: async ({ id, status }: { id: string; status: 'rascunho' | 'publicado' }) => {
+      // Update both fields for backward compatibility
       const { data, error } = await supabase
         .from('webstories')
-        .update({ published })
+        .update({ 
+          status,
+          published: status === 'publicado' 
+        })
         .eq('id', id)
         .select()
         .single();
@@ -145,7 +167,7 @@ export const useToggleWebStoryPublish = () => {
     },
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['webstories'] });
-      toast.success(variables.published ? 'WebStory publicada' : 'WebStory despublicada');
+      toast.success(variables.status === 'publicado' ? 'WebStory publicada' : 'WebStory despublicada');
     },
     onError: (error: Error) => {
       toast.error(`Erro: ${error.message}`);

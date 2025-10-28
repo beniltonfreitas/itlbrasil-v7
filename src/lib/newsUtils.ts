@@ -109,6 +109,27 @@ export const WHATSAPP_CTA = `<p><strong>&gt;&gt; Siga o canal da ITL Brasil no W
  * Generate URL-friendly slug from title
  * Removes accents, converts to lowercase, replaces special chars with hyphens
  */
+import { supabase } from "@/integrations/supabase/client";
+
+export const ensureUniqueSlug = async (baseSlug: string): Promise<string> => {
+  let slug = baseSlug;
+  let counter = 1;
+  
+  while (true) {
+    const { data, error } = await supabase
+      .from('articles')
+      .select('id')
+      .eq('slug', slug)
+      .maybeSingle();
+    
+    if (error) throw error;
+    if (!data) return slug; // Slug disponível
+    
+    slug = `${baseSlug}-${counter}`;
+    counter++;
+  }
+};
+
 export const generateSlug = (title: string): string => {
   return title
     .toLowerCase()
