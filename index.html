@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ITL BRASIL - Instituto Tribuna Livre Brasil | Portal de Notícias e Geopolítica</title>
+    <meta name="description" content="Portal de notícias especializado em geopolítica, economia, sociedade e análises internacionais. Acompanhe as principais notícias e análises do cenário mundial.">
+    <meta name="keywords" content="geopolítica, notícias, brasil, economia, internacional, política externa, diplomacia">
+    <meta name="author" content="ITL BRASIL" />
+
+    
+    
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="https://storage.googleapis.com/gpt-engineer-file-uploads/5VCMjDtrOMP7GL2mhiEQG1bef322/social-images/social-1759175084164-Logo ITL BRASIL.png">
+    <meta property="og:url" content="https://itlbrasil.com.br" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@itlbrasil" />
+    
+    
+    <meta name="twitter:image" content="https://storage.googleapis.com/gpt-engineer-file-uploads/5VCMjDtrOMP7GL2mhiEQG1bef322/social-images/social-1759175084164-Logo ITL BRASIL.png">
+    
+  
+  
+  
+  <link rel="icon" type="image/png" href="/logo-itl-brasil.png">
+  <meta property="og:title" content="ITL BRASIL - Instituto Tribuna Livre Brasil | Portal de Notícias e Geopolítica">
+  <meta name="twitter:title" content="ITL BRASIL - Instituto Tribuna Livre Brasil | Portal de Notícias e Geopolítica">
+  <meta property="og:description" content="Portal de notícias especializado em geopolítica, economia, sociedade e análises internacionais. Acompanhe as principais notícias e análises do cenário mundial.">
+  <meta name="twitter:description" content="Portal de notícias especializado em geopolítica, economia, sociedade e análises internacionais. Acompanhe as principais notícias e análises do cenário mundial.">
+  
+  <!-- Technological Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Exo+2:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Firebase SDK for Web Push Notifications -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging-compat.js"></script>
+  
+  <!-- Anti-FOUC: Force dark mode for login page only -->
+  <script>
+    (function() {
+      if (window.location.pathname === '/auth') {
+        const theme = localStorage.getItem('itl-login-theme') || 'dark';
+        document.documentElement.classList.add(theme);
+      }
+    })();
+  </script>
+</head>
+
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- Service Worker Registration -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/firebase-messaging-sw.js')
+          .then((reg) => console.log('✅ Service Worker registered:', reg.scope))
+          .catch((err) => console.error('❌ Service Worker registration failed:', err));
+      }
+    </script>
+  </body>
+</html>

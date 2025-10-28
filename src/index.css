@@ -1,0 +1,200 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Sidebar transitions */
+.sidebar-transition {
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Backdrop mobile */
+.sidebar-backdrop {
+  @apply fixed inset-0 bg-black/50 z-40;
+}
+
+/* High Contrast Mode */
+.theme-high-contrast {
+  --background: 0 0% 0%;
+  --foreground: 0 0% 100%;
+  --primary: 60 100% 50%;
+  --primary-foreground: 0 0% 0%;
+  --secondary: 210 100% 50%;
+  --secondary-foreground: 0 0% 100%;
+  --accent: 45 100% 50%;
+  --accent-foreground: 0 0% 0%;
+  --destructive: 0 100% 50%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 0 0% 100%;
+  --input: 0 0% 100%;
+  --ring: 60 100% 50%;
+  --muted: 0 0% 20%;
+  --muted-foreground: 0 0% 100%;
+}
+
+/* Dyslexic Font */
+@import url('https://fonts.googleapis.com/css2?family=OpenDyslexic&display=swap');
+
+.font-dyslexic,
+.font-dyslexic * {
+  font-family: 'OpenDyslexic', 'Comic Sans MS', sans-serif !important;
+}
+
+/* Line Spacing */
+.line-spacing-normal,
+.line-spacing-normal * {
+  line-height: 1.5 !important;
+}
+
+.line-spacing-relaxed,
+.line-spacing-relaxed * {
+  line-height: 1.8 !important;
+}
+
+.line-spacing-loose,
+.line-spacing-loose * {
+  line-height: 2.0 !important;
+}
+
+/* ITL BRASIL Portal Design System - Professional News Portal
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* News Portal Brand Colors */
+    --background: 0 0% 100%;
+    --foreground: 210 22% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 210 22% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 210 22% 15%;
+
+    /* Professional Blue Palette */
+    --primary: 213 92% 25%;        /* Deep professional blue */
+    --primary-foreground: 0 0% 100%;
+    --primary-light: 213 85% 45%;   /* Lighter blue for hovers */
+    --primary-dark: 213 95% 18%;    /* Darker blue for emphasis */
+
+    /* News Portal Grays */
+    --secondary: 210 15% 95%;       /* Light gray backgrounds */
+    --secondary-foreground: 210 22% 15%;
+    
+    --muted: 210 15% 92%;          /* Subtle gray sections */
+    --muted-foreground: 210 18% 35%;
+
+    --accent: 213 85% 45%;         /* Accent blue for links */
+    --accent-foreground: 0 0% 100%;
+
+    /* Breaking News & Alerts */
+    --breaking: 0 84% 55%;         /* Red for breaking news */
+    --breaking-foreground: 0 0% 100%;
+    
+    --warning: 35 91% 55%;         /* Orange for important news */
+    --warning-foreground: 0 0% 100%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 210 15% 88%;
+    --input: 210 15% 92%;
+    --ring: 213 92% 25%;
+
+    /* Custom gradients and effects */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-light)));
+    --gradient-hero: linear-gradient(135deg, hsl(var(--primary-dark)) 0%, hsl(var(--primary)) 100%);
+    --shadow-news: 0 4px 20px -4px hsl(var(--primary) / 0.1);
+    --shadow-card: 0 2px 10px -2px hsl(var(--foreground) / 0.1);
+
+    --radius: 0.75rem;
+
+    /* Sidebar colors (keeping original) */
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Cyber Tech Colors for Login */
+    --cyber-blue: 198 100% 50%;        /* #00C2FF */
+    --cyber-blue-glow: 198 100% 50%;
+    --cyber-dark: 210 100% 12%;        /* #001E3C */
+    --cyber-black: 0 0% 0%;            /* #000000 */
+    --cyber-gray: 0 0% 63%;            /* #A0A0A0 */
+    --cyber-white: 0 0% 100%;          /* #FFFFFF */
+
+    /* Glassmorphism */
+    --glass-bg: 0 0% 100% / 0.05;      /* rgba(255,255,255,0.05) */
+    --glass-border: 0 0% 100% / 0.1;   /* rgba(255,255,255,0.1) */
+    --glass-blur: 20px;
+  }
+
+  .dark {
+    /* Dark mode colors */
+    --background: 213 25% 8%;
+    --foreground: 0 0% 95%;
+
+    --card: 213 25% 10%;
+    --card-foreground: 0 0% 95%;
+
+    --popover: 213 25% 10%;
+    --popover-foreground: 0 0% 95%;
+
+    --primary: 213 85% 65%;
+    --primary-foreground: 213 25% 8%;
+    --primary-light: 213 80% 75%;
+    --primary-dark: 213 90% 55%;
+
+    --secondary: 213 20% 15%;
+    --secondary-foreground: 0 0% 95%;
+    
+    --muted: 213 20% 12%;
+    --muted-foreground: 0 0% 65%;
+
+    --accent: 213 85% 65%;
+    --accent-foreground: 213 25% 8%;
+
+    --breaking: 0 75% 60%;
+    --breaking-foreground: 0 0% 100%;
+    
+    --warning: 35 85% 60%;
+    --warning-foreground: 0 0% 100%;
+
+    --destructive: 0 75% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 213 20% 18%;
+    --input: 213 20% 18%;
+    --ring: 213 85% 65%;
+
+    /* Keep original sidebar dark values */
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Login screen light mode adjustments */
+    --cyber-blue: 198 100% 45%;
+    --cyber-dark: 210 50% 95%;
+    --cyber-black: 0 0% 98%;
+    --cyber-gray: 0 0% 40%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}

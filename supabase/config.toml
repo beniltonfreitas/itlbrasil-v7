@@ -1,0 +1,39 @@
+project_id = "adllopjxodsyglyctqdz"
+
+[auth]
+# Tempo de expiração do JWT em segundos (1 hora)
+jwt_expiry = 3600
+# Habilitar rotação de refresh tokens
+refresh_token_rotation_enabled = true
+# Tempo de inatividade máxima (24 horas)
+session_timeout = 86400
+
+[functions.bootstrap-superadmin]
+verify_jwt = false
+
+[functions.save-push-token]
+verify_jwt = true
+
+[functions.push-broadcast]
+verify_jwt = true
+
+[functions.notify-superadmins]
+verify_jwt = false
+
+[functions.nfse-emitir]
+verify_jwt = true
+
+[functions.nfse-cancelar]
+verify_jwt = true
+
+[functions.proxy-image]
+verify_jwt = false
+
+[functions.vpn-session]
+verify_jwt = true
+
+[functions.vpn-health]
+verify_jwt = false
+
+[functions.vpn-cleanup-guest]
+verify_jwt = false

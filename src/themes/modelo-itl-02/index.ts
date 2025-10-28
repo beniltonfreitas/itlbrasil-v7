@@ -1,0 +1,1 @@
+export { ModeloItl02 } from './ModeloItl02';
