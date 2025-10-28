@@ -225,20 +225,56 @@ const ReporterAI = () => {
         </Card>
       )}
 
-      <Alert>
-        <AlertCircle className="h-4 w-4" />
-        <AlertDescription>
-          <strong>Como usar:</strong>
-          <ol className="list-decimal list-inside mt-2 space-y-1 text-sm">
-            <li>Cole o link da notícia que deseja extrair</li>
-            <li>Opcionalmente, cole o link de uma imagem específica</li>
-            <li>Clique em "Gerar JSON" e aguarde</li>
-            <li>Copie o JSON gerado</li>
-            <li>Vá até <strong>Importar em Massa</strong> e cole o JSON</li>
-            <li>Revise e publique a notícia</li>
-          </ol>
-        </AlertDescription>
-      </Alert>
+      <Card className="bg-blue-500/5 border-blue-500/20">
+        <CardHeader>
+          <CardTitle className="text-blue-600 dark:text-blue-400 flex items-center gap-2">
+            <AlertCircle className="h-5 w-5" />
+            Como usar o Repórter AI
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <p className="font-medium mb-2">📋 Passo a passo:</p>
+            <ol className="list-decimal list-inside space-y-1 text-sm text-muted-foreground">
+              <li>Cole a URL completa da notícia (ex: https://g1.globo.com/...)</li>
+              <li>Opcionalmente, forneça uma URL de imagem personalizada</li>
+              <li>Clique em "Gerar JSON" e aguarde 10-20 segundos</li>
+              <li>O JSON gerado seguirá o formato de importação em massa</li>
+              <li>Copie o JSON e use na ferramenta de Importação em Massa</li>
+            </ol>
+          </div>
+
+          <div className="p-4 bg-background rounded-lg border space-y-3">
+            <p className="font-medium text-sm">✅ Formato JSON correto:</p>
+            <ul className="space-y-2 text-xs">
+              <li className="flex items-start gap-2">
+                <code className="bg-muted px-2 py-0.5 rounded font-mono">imagem</code>
+                <span className="text-muted-foreground">String com URL da imagem</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <code className="bg-muted px-2 py-0.5 rounded font-mono">conteudo</code>
+                <span className="text-muted-foreground">String HTML única (não array)</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <code className="bg-muted px-2 py-0.5 rounded font-mono">tags</code>
+                <span className="text-muted-foreground">Exatamente 12 tags relevantes</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <code className="bg-muted px-2 py-0.5 rounded font-mono">categoria</code>
+                <span className="text-muted-foreground">politica, economia, tecnologia, esportes, cultura, saude, educacao, internacional, opiniao, geral</span>
+              </li>
+            </ul>
+          </div>
+
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription className="text-xs">
+              <strong>Importante:</strong> O Repórter AI usa Lovable AI (Gemini 2.5 Flash) para processar as notícias. 
+              Certifique-se de que a URL da notícia está acessível e contém conteúdo válido.
+            </AlertDescription>
+          </Alert>
+        </CardContent>
+      </Card>
     </div>
   );
 };
