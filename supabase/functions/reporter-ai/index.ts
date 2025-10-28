@@ -71,36 +71,41 @@ serve(async (req) => {
 Extraia as informações da página HTML fornecida e retorne SOMENTE um JSON válido no formato especificado.
 
 REGRAS CRÍTICAS:
-1. "imagem" = STRING com URL completa da imagem principal (ex: "https://example.com/foto.jpg")
-2. "conteudo" = STRING HTML única com TODO o texto (não array, não objeto)
-3. "imagens_adicionais" = ARRAY de strings com URLs (ex: ["url1", "url2"]) ou omita se não houver
-4. "tags" = EXATAMENTE 12 tags relevantes (nem mais, nem menos)
-5. "categoria" = Use APENAS estas categorias válidas: "politica", "economia", "tecnologia", "esportes", "cultura", "saude", "educacao", "internacional", "opiniao", "geral"
-6. "slug" = minúsculas, sem acentos, hífens (ex: "economia-brasileira-cresce")
+1. "imagem" = STRING com URL completa HTTPS da imagem principal (ex: "https://example.com/foto.jpg")
+2. "conteudo" = STRING HTML única com TODO o texto formatado (não array, não objeto)
+3. "imagens_adicionais" = ARRAY de strings com URLs HTTPS ou omita completamente se não houver
+4. "tags" = EXATAMENTE 12 tags relevantes, únicas e minúsculas (nem mais, nem menos)
+5. "categoria" = Use EXATAMENTE uma destas (com acento e maiúscula): "Política", "Economia", "Tecnologia", "Esportes", "Cultura", "Saúde", "Educação", "Internacional", "Opinião", "Geral", "Segurança", "Meio Ambiente"
+6. "slug" = minúsculas, sem acentos, apenas hífens como separador (ex: "economia-brasileira-cresce")
 7. NÃO inclua menções ao WhatsApp, Telegram ou redes sociais no conteúdo
 8. Use HTML semântico limpo: <p>, <h2>, <h3>, <blockquote>, <strong>, <em>, <ul><li>
+9. "resumo" = máximo 160 caracteres
+10. "seo.meta_titulo" = máximo 60 caracteres
+11. "seo.meta_descricao" = máximo 160 caracteres
+12. "featured" = sempre true para notícias principais
 
-FORMATO JSON (copie exatamente esta estrutura):
+FORMATO JSON EXATO (copie esta estrutura):
 {
   "noticias": [{
-    "titulo": "Título completo da notícia",
-    "slug": "titulo-url-friendly",
-    "categoria": "politica",
-    "resumo": "Resumo em até 160 caracteres",
-    "conteudo": "<p>Parágrafo 1 com todo o texto da notícia.</p><p>Parágrafo 2 continuação...</p><h2>Subtítulo</h2><p>Mais conteúdo...</p>",
-    "fonte": "Nome do site de origem",
-    "imagem": "https://exemplo.com/imagem.jpg",
-    "imagem_alt": "Descrição da imagem em 10-140 caracteres",
-    "imagem_credito": "Crédito do fotógrafo ou agência",
-    "imagens_adicionais": ["https://exemplo.com/img2.jpg", "https://exemplo.com/img3.jpg"],
+    "titulo": "Título completo e informativo da notícia",
+    "slug": "titulo-da-noticia-sem-acentos",
+    "categoria": "Política",
+    "resumo": "Resumo conciso da notícia em até 160 caracteres.",
+    "conteudo": "<p>Primeiro parágrafo introdutório com as informações principais da notícia.</p><p>Segundo parágrafo com mais detalhes e contexto sobre o acontecimento.</p><h2>Subtítulo Relevante</h2><p>Continuação do texto com informações adicionais.</p><p>Parágrafo final com conclusão ou desdobramentos.</p>",
+    "fonte": "Nome do Portal ou Site de Origem",
+    "imagem": "https://exemplo.com/path/imagem-principal.jpg",
+    "imagem_alt": "Descrição acessível da imagem entre 10-140 caracteres",
+    "imagem_credito": "Fotógrafo/Agência",
     "featured": true,
     "tags": ["tag1", "tag2", "tag3", "tag4", "tag5", "tag6", "tag7", "tag8", "tag9", "tag10", "tag11", "tag12"],
     "seo": {
-      "meta_titulo": "Título SEO até 60 caracteres",
-      "meta_descricao": "Descrição SEO até 160 caracteres"
+      "meta_titulo": "Título SEO otimizado com até 60 caracteres",
+      "meta_descricao": "Descrição SEO atraente e informativa com até 160 caracteres, incluindo palavras-chave relevantes."
     }
   }]
-}`;
+}
+
+IMPORTANTE: Se não houver imagens adicionais no artigo, NÃO inclua o campo "imagens_adicionais" no JSON.`;
 
     const userPrompt = `Extraia e formate a notícia da seguinte página HTML.
 ${imageUrl ? `Use esta imagem como imagem principal: ${imageUrl}` : 'Extraia a imagem principal da página.'}
@@ -184,6 +189,14 @@ ${articleContent.slice(0, 50000)}`; // Limit content to avoid token limits
     const noticia = parsedJson.noticias[0];
 
     // Validate critical fields
+    const validCategories = ['Política', 'Economia', 'Tecnologia', 'Esportes', 'Cultura', 'Saúde', 'Educação', 'Internacional', 'Opinião', 'Geral', 'Segurança', 'Meio Ambiente'];
+    
+    if (!validCategories.includes(noticia.categoria)) {
+      console.error('❌ Categoria inválida:', noticia.categoria);
+      // Auto-fix: use "Geral" as default
+      noticia.categoria = 'Geral';
+    }
+
     if (typeof noticia.imagem !== 'string') {
       console.error('❌ Campo "imagem" deve ser string, recebido:', typeof noticia.imagem);
       throw new Error('Formato inválido: campo "imagem" deve ser uma URL (string)');
@@ -203,6 +216,19 @@ ${articleContent.slice(0, 50000)}`; // Limit content to avoid token limits
         }
         noticia.tags = noticia.tags.slice(0, 12);
       }
+    }
+
+    // Validate SEO fields length
+    if (noticia.seo?.meta_titulo && noticia.seo.meta_titulo.length > 60) {
+      noticia.seo.meta_titulo = noticia.seo.meta_titulo.substring(0, 60);
+    }
+    
+    if (noticia.seo?.meta_descricao && noticia.seo.meta_descricao.length > 160) {
+      noticia.seo.meta_descricao = noticia.seo.meta_descricao.substring(0, 160);
+    }
+    
+    if (noticia.resumo && noticia.resumo.length > 160) {
+      noticia.resumo = noticia.resumo.substring(0, 160);
     }
 
     // Override image if provided by user
