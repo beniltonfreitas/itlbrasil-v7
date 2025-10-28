@@ -148,8 +148,18 @@ const AdminLayout = () => {
   };
 
   const allNavigation = [
-    // Dashboard (standalone)
-    { name: "Dashboard", href: "/admin", icon: LayoutDashboard, permission: "dashboard" },
+    // Dashboard (com submenu)
+    { 
+      name: "Dashboard", 
+      icon: LayoutDashboard, 
+      permission: "dashboard-group",
+      type: "group",
+      key: "dashboard",
+      submenu: [
+        { name: "Visão Geral", href: "/admin", icon: LayoutDashboard, permission: "dashboard" },
+        { name: "Ativar VPN", href: "/admin/vpn", icon: Shield, permission: "vpn" },
+      ]
+    },
     
     // Meus Projetos (logo abaixo do Dashboard)
     { 
@@ -198,9 +208,6 @@ const AdminLayout = () => {
         { name: "Outros Vídeos", href: "/admin/training/others", icon: Monitor, permission: "training-others" },
       ]
     },
-    
-    // VPN (standalone)
-    { name: "Ativar VPN", href: "/admin/vpn", icon: Shield, permission: "vpn" },
     
     // Menus Promovidos (ex-submenus agora standalone)
     { name: "Todas as Notícias", href: "/admin/articles", icon: FileText, permission: "articles" },
