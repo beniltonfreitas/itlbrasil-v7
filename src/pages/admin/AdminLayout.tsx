@@ -191,6 +191,7 @@ const AdminLayout = () => {
     { name: "Cadastrar Notícias", href: "/admin/articles/new", icon: PlusCircle, permission: "article-editor" },
     { name: "Web Stories", href: "/admin/webstories", icon: BookOpen, permission: "webstories" },
     { name: "Repórter AI", href: "/admin/reporter-ai", icon: Sparkles, permission: "reporter-ai" },
+    { name: "Repórter Pró", href: "https://chatgpt.com/share/6901212f-cb00-8002-8684-d71080179ed4", icon: ExternalLink, permission: "reporter-pro", external: true },
     { name: "Repórter GPT", href: "https://chatgpt.com/g/g-6900f51c074c819192f61cb9e3f9010f-reporter-ai", icon: ExternalLink, permission: "reporter-ai", external: true },
     { name: "Importar em Massa", href: "/admin/bulk-import", icon: Upload, permission: "bulk-import" },
     
