@@ -56,6 +56,7 @@ import { ImageManager } from "./pages/admin/ImageManager";
 import { AdsManager } from "./pages/admin/AdsManager";
 import BannersManager from "./pages/admin/BannersManager";
 import ReporterAI from "./pages/admin/ReporterAI";
+import ReporterAIv2 from "./pages/admin/ReporterAIv2";
 
 import JornalistaProTools from "./pages/admin/JornalistaProTools";
 import StudioPlaceholder from "./pages/admin/StudioPlaceholder";
@@ -194,8 +195,9 @@ const AppRoutes = () => {
         <Route path="webstories/new" element={<WebStoriesManager />} />
         <Route path="webstories/:id/edit" element={<WebStoriesManager />} />
         
-        {/* Reporter AI Route */}
+        {/* Reporter AI Routes */}
         <Route path="reporter-ai" element={<ReporterAI />} />
+        <Route path="reporter-ai-v2" element={<ReporterAIv2 />} />
         
         {/* RSS Import Route */}
         <Route path="import" element={<RSSImportManager />} />

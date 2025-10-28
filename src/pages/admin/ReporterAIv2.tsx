@@ -40,20 +40,18 @@ const ReporterAIv2 = () => {
 
   const fetchJobs = async () => {
     try {
-      // @ts-ignore - Table will exist after migration is applied
       const { data, error } = await supabase
+        // @ts-ignore - reporter_jobs table will exist after migration
         .from('reporter_jobs')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(10);
 
       if (error) throw error;
-      // @ts-ignore
-      setJobs(data || []);
+      setJobs((data as any) || []);
 
       // Check if there are active jobs
-      // @ts-ignore
-      const hasActive = data?.some(j => j.status === 'queued' || j.status === 'processing');
+      const hasActive = data?.some((j: any) => j.status === 'queued' || j.status === 'processing');
       if (hasActive && !polling) {
         startPolling();
       }

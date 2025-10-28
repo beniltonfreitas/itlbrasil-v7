@@ -191,6 +191,7 @@ const BulkNewsImport = () => {
     return defaultAuthor?.id || authors?.[0]?.id;
   };
 
+
   const handleImport = async () => {
     const validated = validateJSON();
     if (!validated) return;
@@ -381,17 +382,26 @@ const BulkNewsImport = () => {
             
             <div className="flex gap-2">
               <Button 
-                onClick={validateJSON}
+                onClick={handleValidateOnly}
                 variant="outline"
-                disabled={!jsonInput || importing}
+                disabled={!jsonInput || importing || validating}
               >
-                <FileText className="h-4 w-4 mr-2" />
-                Validar JSON
+                {validating ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Validando...
+                  </>
+                ) : (
+                  <>
+                    <Check className="h-4 w-4 mr-2" />
+                    Validar JSON
+                  </>
+                )}
               </Button>
               
               <Button 
                 onClick={handleImport}
-                disabled={!jsonInput || importing}
+                disabled={!jsonInput || importing || validating}
               >
                 {importing ? (
                   <>
@@ -419,6 +429,72 @@ const BulkNewsImport = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Validation Report */}
+      {validationReport && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              {validationReport.valid ? (
+                <>
+                  <CheckCircle className="h-5 w-5 text-green-600" />
+                  Validação Bem-Sucedida
+                </>
+              ) : (
+                <>
+                  <AlertTriangle className="h-5 w-5 text-yellow-600" />
+                  Relatório de Validação
+                </>
+              )}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex flex-wrap gap-2">
+              {validationReport.totalNews !== undefined && (
+                <Badge variant="outline">
+                  📰 {validationReport.totalNews} notícias
+                </Badge>
+              )}
+              {validationReport.issues && (
+                <>
+                  <Badge variant={validationReport.issues.filter(i => i.severity === 'error').length > 0 ? 'destructive' : 'secondary'}>
+                    🚫 {validationReport.issues.filter(i => i.severity === 'error').length} erros
+                  </Badge>
+                  <Badge variant="secondary">
+                    ⚠️ {validationReport.issues.filter(i => i.severity === 'warning').length} avisos
+                  </Badge>
+                </>
+              )}
+              {validationReport.categories && validationReport.categories.length > 0 && (
+                <Badge variant="outline">
+                  📂 {validationReport.categories.length} categorias
+                </Badge>
+              )}
+            </div>
+
+            {validationReport.issues && validationReport.issues.length > 0 && (
+              <div className="space-y-2 max-h-96 overflow-y-auto">
+                {validationReport.issues.map((issue, idx) => (
+                  <Alert key={idx} variant={issue.severity === 'error' ? 'destructive' : 'default'}>
+                    <AlertDescription>
+                      {issue.severity === 'error' ? '🚫' : '⚠️'} {issue.message}
+                    </AlertDescription>
+                  </Alert>
+                ))}
+              </div>
+            )}
+
+            {validationReport.valid && (!validationReport.issues || validationReport.issues.length === 0) && (
+              <Alert className="bg-green-50 border-green-200 dark:bg-green-950">
+                <CheckCircle className="h-4 w-4 text-green-600" />
+                <AlertDescription className="text-green-800 dark:text-green-400">
+                  ✅ Nenhum erro encontrado! O JSON está pronto para importação.
+                </AlertDescription>
+              </Alert>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Results Section */}
       {results.length > 0 && (
