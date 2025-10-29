@@ -22,14 +22,20 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const startTime = Date.now();
+  console.log('[reporter-batch] Iniciando requisição');
+
   try {
     const { items }: BatchRequest = await req.json();
+    console.log(`[reporter-batch] Recebidos ${items?.length || 0} itens`);
 
     if (!LOVABLE_API_KEY) {
+      console.error('[reporter-batch] LOVABLE_API_KEY não configurada');
       throw new Error('LOVABLE_API_KEY não configurada');
     }
 
     if (!items || !Array.isArray(items) || items.length === 0 || items.length > 10) {
+      console.error('[reporter-batch] Quantidade inválida de itens:', items?.length);
       return new Response(
         JSON.stringify({ error: 'Envie de 1 a 10 itens no formato { items: [{ newsUrl, imageUrl? }] }' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -39,6 +45,7 @@ serve(async (req) => {
     // Validar URLs
     for (const item of items) {
       if (!item.newsUrl || !item.newsUrl.match(/^https?:\/\/.+/)) {
+        console.error('[reporter-batch] URL inválida:', item.newsUrl);
         return new Response(
           JSON.stringify({ error: `URL inválida: ${item.newsUrl}` }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -46,13 +53,18 @@ serve(async (req) => {
       }
     }
 
-    const noticias = [];
-    const failed = [];
+    // Timeout de 50 segundos
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Timeout: processamento excedeu 50 segundos')), 50000)
+    );
 
-    for (const item of items) {
+    // Processar todos os itens em paralelo com Promise.allSettled
+    console.log('[reporter-batch] Iniciando processamento paralelo');
+    const processItem = async (item: BatchItem) => {
+      const itemStartTime = Date.now();
+      console.log(`[reporter-batch] Processando: ${item.newsUrl}`);
+
       try {
-        console.log(`Processando: ${item.newsUrl}`);
-
         // Fetch HTML da notícia
         const htmlResponse = await fetch(item.newsUrl, {
           headers: {
@@ -61,11 +73,12 @@ serve(async (req) => {
         });
 
         if (!htmlResponse.ok) {
-          failed.push({ url: item.newsUrl, reason: `HTTP ${htmlResponse.status}` });
-          continue;
+          console.error(`[reporter-batch] Falha ao buscar ${item.newsUrl}: HTTP ${htmlResponse.status}`);
+          return { success: false, url: item.newsUrl, reason: `HTTP ${htmlResponse.status}` };
         }
 
         const html = await htmlResponse.text();
+        console.log(`[reporter-batch] HTML obtido de ${item.newsUrl} (${html.length} chars)`);
 
         // Prompt para Lovable AI (Gemini 2.5 Flash)
         const systemPrompt = `Você é o Repórter Pró, gerador de JSON Premium v2.1 para o portal ITL Brasil.
@@ -112,6 +125,7 @@ ${item.imageUrl ? `\nIMPORTANTE: Use esta imagem para hero/og/card: ${item.image
 HTML da página:
 ${html.substring(0, 50000)}`;
 
+        console.log(`[reporter-batch] Chamando IA para ${item.newsUrl}`);
         let attempt = 0;
         let aiResponse;
         
@@ -132,17 +146,15 @@ ${html.substring(0, 50000)}`;
           });
 
           if (aiResponse.status === 429) {
-            console.log(`Rate limit (429) no item ${item.newsUrl}, aguardando 3s...`);
+            console.log(`[reporter-batch] Rate limit (429) no item ${item.newsUrl}, aguardando 3s...`);
             await new Promise(resolve => setTimeout(resolve, 3000));
             attempt++;
             continue;
           }
 
           if (aiResponse.status === 402) {
-            return new Response(
-              JSON.stringify({ error: 'Créditos insuficientes no Lovable AI. Adicione créditos em Settings > Workspace > Usage.' }),
-              { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-            );
+            console.error('[reporter-batch] Créditos insuficientes');
+            throw new Error('CREDITS_INSUFFICIENT');
           }
 
           break;
@@ -150,17 +162,18 @@ ${html.substring(0, 50000)}`;
 
         if (!aiResponse || !aiResponse.ok) {
           const errorText = await aiResponse?.text();
-          console.error(`Erro na IA para ${item.newsUrl}:`, errorText);
-          failed.push({ url: item.newsUrl, reason: `IA error: ${aiResponse?.status}` });
-          continue;
+          console.error(`[reporter-batch] Erro na IA para ${item.newsUrl}:`, errorText);
+          return { success: false, url: item.newsUrl, reason: `IA error: ${aiResponse?.status}` };
         }
+
+        console.log(`[reporter-batch] IA respondeu para ${item.newsUrl}`);
 
         const aiData = await aiResponse.json();
         let jsonText = aiData.choices?.[0]?.message?.content;
 
         if (!jsonText) {
-          failed.push({ url: item.newsUrl, reason: 'Resposta vazia da IA' });
-          continue;
+          console.error(`[reporter-batch] Resposta vazia da IA para ${item.newsUrl}`);
+          return { success: false, url: item.newsUrl, reason: 'Resposta vazia da IA' };
         }
 
         // Limpar markdown
@@ -170,15 +183,14 @@ ${html.substring(0, 50000)}`;
         try {
           parsed = JSON.parse(jsonText);
         } catch (e) {
-          console.error(`Erro ao parsear JSON de ${item.newsUrl}:`, e);
-          failed.push({ url: item.newsUrl, reason: 'JSON inválido' });
-          continue;
+          console.error(`[reporter-batch] Erro ao parsear JSON de ${item.newsUrl}:`, e);
+          return { success: false, url: item.newsUrl, reason: 'JSON inválido' };
         }
 
         // Validar e normalizar
         if (!parsed.noticias || !Array.isArray(parsed.noticias) || parsed.noticias.length === 0) {
-          failed.push({ url: item.newsUrl, reason: 'JSON sem array noticias' });
-          continue;
+          console.error(`[reporter-batch] JSON sem array noticias para ${item.newsUrl}`);
+          return { success: false, url: item.newsUrl, reason: 'JSON sem array noticias' };
         }
 
         for (const noticia of parsed.noticias) {
@@ -241,15 +253,47 @@ ${html.substring(0, 50000)}`;
 
           // Fonte
           noticia.fonte = item.newsUrl;
-
-          noticias.push(noticia);
         }
 
+        const itemTime = Date.now() - itemStartTime;
+        console.log(`[reporter-batch] Item ${item.newsUrl} processado com sucesso em ${itemTime}ms`);
+        
+        return { success: true, noticias: parsed.noticias };
+
       } catch (error) {
-        console.error(`Erro ao processar ${item.newsUrl}:`, error);
-        failed.push({ url: item.newsUrl, reason: error.message });
+        console.error(`[reporter-batch] Erro ao processar ${item.newsUrl}:`, error);
+        const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+        if (errorMessage === 'CREDITS_INSUFFICIENT') {
+          throw error; // Propagar erro de créditos
+        }
+        return { success: false, url: item.newsUrl, reason: errorMessage };
+      }
+    };
+
+    // Processar todos os itens em paralelo
+    const processingPromise = Promise.allSettled(
+      items.map(item => processItem(item))
+    );
+
+    // Race entre processamento e timeout
+    const results = await Promise.race([processingPromise, timeoutPromise]) as PromiseSettledResult<any>[];
+
+    const noticias: any[] = [];
+    const failed: any[] = [];
+
+    for (const result of results) {
+      if (result.status === 'fulfilled' && result.value.success) {
+        noticias.push(...result.value.noticias);
+      } else if (result.status === 'fulfilled' && !result.value.success) {
+        failed.push({ url: result.value.url, reason: result.value.reason });
+      } else if (result.status === 'rejected') {
+        console.error('[reporter-batch] Promise rejeitada:', result.reason);
+        failed.push({ url: 'unknown', reason: result.reason?.message || 'Erro desconhecido' });
       }
     }
+
+    const totalTime = Date.now() - startTime;
+    console.log(`[reporter-batch] Processamento concluído em ${totalTime}ms: ${noticias.length} sucesso, ${failed.length} falhas`);
 
     if (noticias.length === 0) {
       return new Response(
@@ -261,20 +305,37 @@ ${html.substring(0, 50000)}`;
       );
     }
 
-    const result = {
+    const resultData = {
       success: true,
       json: { noticias },
       ...(failed.length > 0 && { failed })
     };
 
-    return new Response(JSON.stringify(result), {
+    return new Response(JSON.stringify(resultData), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
-    console.error('Erro no reporter-batch:', error);
+    console.error('[reporter-batch] Erro geral:', error);
+    
+    const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+    
+    if (errorMessage === 'CREDITS_INSUFFICIENT') {
+      return new Response(
+        JSON.stringify({ error: 'Créditos insuficientes no Lovable AI. Adicione créditos em Settings > Workspace > Usage.' }),
+        { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (errorMessage.includes('Timeout')) {
+      return new Response(
+        JSON.stringify({ error: 'Timeout: o processamento está demorando muito. Tente com menos itens.' }),
+        { status: 408, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: errorMessage }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

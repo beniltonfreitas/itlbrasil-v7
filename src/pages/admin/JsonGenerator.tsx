@@ -77,35 +77,67 @@ const JsonGenerator = () => {
     setGeneratedJson("");
 
     try {
-      const { data, error: functionError } = await supabase.functions.invoke('reporter-batch', {
+      console.log('[JsonGenerator] Iniciando geração com', parsedItems.length, 'itens');
+      
+      // Timeout de 60 segundos no frontend
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('FRONTEND_TIMEOUT')), 60000)
+      );
+
+      const generatePromise = supabase.functions.invoke('reporter-batch', {
         body: { items: parsedItems }
       });
 
+      const result = await Promise.race([generatePromise, timeoutPromise]) as any;
+      const { data, error: functionError } = result;
+
       if (functionError) {
-        if (functionError.message.includes('402')) {
-          throw new Error('Créditos insuficientes no Lovable AI. Vá em Settings > Workspace > Usage para adicionar créditos.');
+        console.error('[JsonGenerator] Erro do Supabase:', functionError);
+        console.error('[JsonGenerator] Detalhes completos:', JSON.stringify(functionError, null, 2));
+        
+        // Tratamento específico de erros
+        if (functionError.message?.includes('402') || functionError.message?.includes('CREDITS_INSUFFICIENT')) {
+          throw new Error('❌ Créditos insuficientes no Lovable AI. Adicione créditos em Settings > Workspace > Usage.');
+        } else if (functionError.message?.includes('429')) {
+          throw new Error('⏱️ Limite de requisições atingido. Aguarde alguns minutos e tente novamente.');
+        } else if (functionError.message?.includes('408') || functionError.message?.includes('Timeout')) {
+          throw new Error('⏱️ Timeout: o processamento está demorando muito. Tente com menos itens (recomendado: 1-3 por vez).');
+        } else {
+          throw new Error(functionError.message || 'Erro ao comunicar com o servidor');
         }
-        if (functionError.message.includes('429')) {
-          throw new Error('Limite de requisições excedido. Aguarde alguns minutos e tente novamente.');
-        }
-        throw new Error(functionError.message);
       }
 
       if (!data || !data.success) {
         throw new Error(data?.error || 'Erro ao gerar JSON');
       }
 
+      console.log('[JsonGenerator] JSON gerado com sucesso:', data);
+
       const jsonFormatted = JSON.stringify(data.json, null, 2);
       setGeneratedJson(jsonFormatted);
 
       if (data.failed && data.failed.length > 0) {
-        toast.error(`${data.failed.length} ${data.failed.length === 1 ? 'item falhou' : 'itens falharam'}. JSON gerado com os itens válidos.`);
+        console.warn('[JsonGenerator] Itens que falharam:', data.failed);
+        toast.warning(`⚠️ ${data.failed.length} ${data.failed.length === 1 ? 'item falhou' : 'itens falharam'}. JSON gerado com os itens válidos.`, {
+          duration: 5000
+        });
       } else {
-        toast.success(`${data.json.noticias.length} ${data.json.noticias.length === 1 ? 'notícia processada' : 'notícias processadas'}. Pronto para importação em massa.`);
+        toast.success(`✅ ${data.json.noticias.length} ${data.json.noticias.length === 1 ? 'notícia processada' : 'notícias processadas'}. Pronto para importação em massa!`);
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Erro desconhecido';
-      toast.error(`Erro: ${errorMessage}`);
+      
+      if (errorMessage === 'FRONTEND_TIMEOUT') {
+        toast.error('⏱️ Timeout: o processamento está demorando muito. Tente com menos itens (recomendado: 1-3 por vez).', {
+          duration: 6000
+        });
+      } else {
+        toast.error(errorMessage, {
+          duration: 5000
+        });
+      }
+      
+      console.error('[JsonGenerator] Erro final:', err);
     } finally {
       setLoading(false);
     }
