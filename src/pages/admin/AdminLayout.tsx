@@ -178,7 +178,27 @@ const AdminLayout = () => {
       ]
     },
     
-    // Meus Projetos (logo abaixo do Dashboard)
+    // Repórter AI (logo abaixo do Dashboard)
+    { 
+      name: "Repórter AI", 
+      icon: Sparkles, 
+      permission: "reporter-ai-group",
+      type: "group",
+      key: "reporter-ai",
+      submenu: [
+        { name: "Repórter AI", href: "/admin/reporter-ai-v2", icon: Sparkles, permission: "reporter-ai" },
+        { 
+          name: "Repórter Pró", 
+          href: "https://chatgpt.com/share/6901212f-cb00-8002-8684-d71080179ed4", 
+          icon: ExternalLink, 
+          permission: "reporter-pro",
+          external: true 
+        },
+        { name: "Repórter GPT", href: "https://chatgpt.com/g/g-6900f51c074c819192f61cb9e3f9010f-reporter-ai", icon: ExternalLink, permission: "reporter-gpt", external: true },
+      ]
+    },
+    
+    // Meus Projetos
     { 
       name: "Meus Projetos", 
       icon: Briefcase, 
@@ -230,26 +250,6 @@ const AdminLayout = () => {
     { name: "Todas as Notícias", href: "/admin/articles", icon: FileText, permission: "articles" },
     { name: "Cadastrar Notícias", href: "/admin/articles/new", icon: PlusCircle, permission: "article-editor" },
     { name: "Web Stories", href: "/admin/webstories", icon: BookOpen, permission: "webstories" },
-    
-    // Repórter AI (com submenu)
-    { 
-      name: "Repórter AI", 
-      icon: Sparkles, 
-      permission: "reporter-ai-group",
-      type: "group",
-      key: "reporter-ai",
-      submenu: [
-        { name: "Repórter AI", href: "/admin/reporter-ai-v2", icon: Sparkles, permission: "reporter-ai" },
-        { 
-          name: "Repórter Pró", 
-          href: "https://chatgpt.com/share/6901212f-cb00-8002-8684-d71080179ed4", 
-          icon: ExternalLink, 
-          permission: "reporter-pro",
-          external: true 
-        },
-        { name: "Repórter GPT", href: "https://chatgpt.com/g/g-6900f51c074c819192f61cb9e3f9010f-reporter-ai", icon: ExternalLink, permission: "reporter-gpt", external: true },
-      ]
-    },
     { name: "Importar em Massa", href: "/admin/bulk-import", icon: Upload, permission: "bulk-import" },
     
     
