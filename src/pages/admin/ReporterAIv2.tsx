@@ -154,7 +154,7 @@ const ReporterAIv2 = () => {
       <div>
         <h1 className="text-3xl font-bold flex items-center gap-2">
           <Sparkles className="h-8 w-8 text-primary" />
-          Repórter AI v2.0
+          Repórter AI
         </h1>
         <p className="text-muted-foreground mt-1">
           Sistema de fila para extração automática de notícias
@@ -166,7 +166,7 @@ const ReporterAIv2 = () => {
         <CardHeader>
           <CardTitle>Adicionar à Fila</CardTitle>
           <CardDescription>
-            Cole o link da notícia para processar em background
+            Cole aqui o LINK da notícia + o LINK da imagem
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

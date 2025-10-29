@@ -147,7 +147,24 @@ const AdminLayout = () => {
     }));
   };
 
-  const allNavigation = [
+  type NavigationItem = {
+    name: string;
+    icon: any;
+    permission: string;
+    href?: string;
+    external?: boolean;
+    type?: "group";
+    key?: string;
+    submenu?: {
+      name: string;
+      href: string;
+      icon: any;
+      permission: string;
+      external?: boolean;
+    }[];
+  };
+
+  const allNavigation: NavigationItem[] = [
     // Dashboard (com submenu)
     { 
       name: "Dashboard", 
@@ -213,10 +230,28 @@ const AdminLayout = () => {
     { name: "Todas as Notícias", href: "/admin/articles", icon: FileText, permission: "articles" },
     { name: "Cadastrar Notícias", href: "/admin/articles/new", icon: PlusCircle, permission: "article-editor" },
     { name: "Web Stories", href: "/admin/webstories", icon: BookOpen, permission: "webstories" },
-    { name: "Repórter AI", href: "/admin/reporter-ai", icon: Sparkles, permission: "reporter-ai" },
-    { name: "Repórter Pró", href: "https://chatgpt.com/share/6901212f-cb00-8002-8684-d71080179ed4", icon: ExternalLink, permission: "reporter-pro", external: true },
-    { name: "Repórter GPT", href: "https://chatgpt.com/g/g-6900f51c074c819192f61cb9e3f9010f-reporter-ai", icon: ExternalLink, permission: "reporter-ai", external: true },
+    
+    // Repórter AI (com submenu)
+    { 
+      name: "Repórter AI", 
+      icon: Sparkles, 
+      permission: "reporter-ai-group",
+      type: "group",
+      key: "reporter-ai",
+      submenu: [
+        { name: "Repórter AI", href: "/admin/reporter-ai-v2", icon: Sparkles, permission: "reporter-ai" },
+        { 
+          name: "Repórter Pró", 
+          href: "https://chatgpt.com/share/6901212f-cb00-8002-8684-d71080179ed4", 
+          icon: ExternalLink, 
+          permission: "reporter-pro",
+          external: true 
+        },
+        { name: "Repórter GPT", href: "https://chatgpt.com/g/g-6900f51c074c819192f61cb9e3f9010f-reporter-ai", icon: ExternalLink, permission: "reporter-gpt", external: true },
+      ]
+    },
     { name: "Importar em Massa", href: "/admin/bulk-import", icon: Upload, permission: "bulk-import" },
+    
     
     // Em Breve (agrupa todos os outros menus)
     { 
@@ -304,7 +339,7 @@ const AdminLayout = () => {
   }));
 
   return (
-    <NextThemesProvider attribute="class" defaultTheme="dark" enableSystem={false}>
+    <NextThemesProvider attribute="class" defaultTheme="light" enableSystem={false}>
       <div className="min-h-screen bg-background">
         {/* Header */}
         <header className="border-b border-border bg-card">
