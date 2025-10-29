@@ -187,6 +187,7 @@ const AdminLayout = () => {
       key: "reporter-ai",
       submenu: [
         { name: "Repórter AI", href: "/admin/reporter-ai-v2", icon: Sparkles, permission: "reporter-ai" },
+        { name: "Gerador JSON", href: "/admin/json-generator", icon: FileText, permission: "json-generator" },
         { 
           name: "Repórter Pró", 
           href: "https://chatgpt.com/share/6901212f-cb00-8002-8684-d71080179ed4", 
