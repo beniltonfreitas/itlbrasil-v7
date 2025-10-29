@@ -40,7 +40,16 @@ const JsonGenerator = () => {
     lines.forEach((line, index) => {
       const parts = line.split(/[|;]/).map(p => p.trim());
       const newsUrl = parts[0];
-      const imageUrl = parts[1];
+      const rawImageUrl = parts[1];
+      
+      // Normaliza casos em que a URL da imagem vem duplicada (ex: .../smart/https://site.com/arquivo.jpg)
+      let imageUrl = rawImageUrl;
+      if (imageUrl && imageUrl.includes('https://')) {
+        const segments = imageUrl.split('https://').filter(Boolean);
+        if (segments.length > 1) {
+          imageUrl = 'https://' + segments[segments.length - 1];
+        }
+      }
 
       if (!newsUrl.match(/^https?:\/\/.+/)) {
         errors.push(`Linha ${index + 1}: URL inválida`);
@@ -81,72 +90,101 @@ const JsonGenerator = () => {
     setGeneratedJson("");
 
     try {
-      console.log('[JsonGenerator] Iniciando geração com', parsedItems.length, 'itens');
-      
-      // Timeout de 60 segundos no frontend
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('FRONTEND_TIMEOUT')), 60000)
-      );
+      console.log('[JsonGenerator] Iniciando geração ITEM A ITEM com', parsedItems.length, 'itens');
 
-      const generatePromise = supabase.functions.invoke('reporter-batch', {
-        body: { items: parsedItems }
-      });
+      const CONCURRENCY = 3;
 
-      const result = await Promise.race([generatePromise, timeoutPromise]) as any;
-      const { data, error: functionError } = result;
+      const queue = [...parsedItems];
+      const noticiasAgregadas: any[] = [];
+      const falhas: { url: string; reason: string }[] = [];
 
-      if (functionError) {
-        console.error('[JsonGenerator] Erro do Supabase:', functionError);
-        console.error('[JsonGenerator] Detalhes completos:', JSON.stringify(functionError, null, 2));
-        
-        // Detectar erro de transporte (Failed to send a request to the Edge Function)
-        if (functionError.name === 'FunctionsFetchError' || 
-            (functionError.message && functionError.message.includes('Failed to send a request'))) {
-          throw new Error('🔌 Não foi possível contatar o servidor (Edge Function). Tente novamente. Se persistir, recarregue a página.');
+      const processItem = async (item: ParsedItem) => {
+        // Timeout de 60s por item
+        const perItemTimeout = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('ITEM_TIMEOUT')), 60000)
+        );
+
+        const invokePromise = supabase.functions.invoke('reporter-ai', {
+          body: { newsUrl: item.newsUrl, imageUrl: item.imageUrl }
+        });
+
+        const result = await Promise.race([invokePromise, perItemTimeout]) as any;
+        const { data, error: functionError } = result || {};
+
+        if (functionError) {
+          console.error('[JsonGenerator] Erro do Supabase (reporter-ai):', functionError);
+
+          if (functionError.name === 'FunctionsFetchError' ||
+              (functionError.message && functionError.message.includes('Failed to send a request'))) {
+            throw new Error('🔌 Não foi possível contatar o servidor (Edge Function). Tente novamente. Se persistir, recarregue a página.');
+          }
+
+          if (functionError.message?.includes('402') || functionError.message?.includes('CREDITS_INSUFFICIENT')) {
+            throw new Error('❌ Créditos insuficientes no Lovable AI. Adicione créditos em Settings > Workspace > Usage.');
+          } else if (functionError.message?.includes('429')) {
+            throw new Error('⏱️ Limite de requisições atingido. Aguarde alguns minutos e tente novamente.');
+          } else if (functionError.message?.includes('408') || functionError.message?.includes('Timeout')) {
+            throw new Error('⏱️ Timeout: o processamento do item está demorando. Tente novamente.');
+          } else {
+            throw new Error(functionError.message || 'Erro ao comunicar com o servidor');
+          }
         }
-        
-        // Tratamento específico de erros
-        if (functionError.message?.includes('402') || functionError.message?.includes('CREDITS_INSUFFICIENT')) {
-          throw new Error('❌ Créditos insuficientes no Lovable AI. Adicione créditos em Settings > Workspace > Usage.');
-        } else if (functionError.message?.includes('429')) {
-          throw new Error('⏱️ Limite de requisições atingido. Aguarde alguns minutos e tente novamente.');
-        } else if (functionError.message?.includes('408') || functionError.message?.includes('Timeout')) {
-          throw new Error('⏱️ Timeout: o processamento está demorando muito. Tente com menos itens (recomendado: 1-3 por vez).');
-        } else {
-          throw new Error(functionError.message || 'Erro ao comunicar com o servidor');
+
+        if (!data || !data.success) {
+          const reason = data?.error || 'Erro ao gerar JSON do item';
+          return { ok: false as const, reason };
         }
+
+        const noticias = data.json?.noticias || [];
+        return { ok: true as const, noticias };
+      };
+
+      const runners: Promise<void>[] = [];
+      for (let i = 0; i < CONCURRENCY; i++) {
+        runners.push((async () => {
+          while (queue.length > 0) {
+            const item = queue.shift()!;
+            try {
+              const res = await processItem(item);
+              if (res.ok) {
+                noticiasAgregadas.push(...res.noticias);
+              } else {
+                falhas.push({ url: item.newsUrl, reason: res.reason });
+              }
+            } catch (e) {
+              const msg = e instanceof Error ? e.message : 'Erro desconhecido';
+              falhas.push({ url: item.newsUrl, reason: msg });
+              // Se for erro de transporte/crítico, continue mas informe no final
+            }
+          }
+        })());
       }
 
-      if (!data || !data.success) {
-        throw new Error(data?.error || 'Erro ao gerar JSON');
+      await Promise.all(runners);
+
+      if (noticiasAgregadas.length === 0) {
+        throw new Error('Nenhuma notícia foi processada com sucesso.');
       }
 
-      console.log('[JsonGenerator] JSON gerado com sucesso:', data);
-
-      const jsonFormatted = JSON.stringify(data.json, null, 2);
+      const jsonFinal = { noticias: noticiasAgregadas };
+      const jsonFormatted = JSON.stringify(jsonFinal, null, 2);
       setGeneratedJson(jsonFormatted);
 
-      if (data.failed && data.failed.length > 0) {
-        console.warn('[JsonGenerator] Itens que falharam:', data.failed);
-        toast.warning(`⚠️ ${data.failed.length} ${data.failed.length === 1 ? 'item falhou' : 'itens falharam'}. JSON gerado com os itens válidos.`, {
+      if (falhas.length > 0) {
+        console.warn('[JsonGenerator] Itens que falharam:', falhas);
+        toast.warning(`⚠️ ${falhas.length} ${falhas.length === 1 ? 'item falhou' : 'itens falharam'}. JSON gerado com os itens válidos.`, {
           duration: 5000
         });
       } else {
-        toast.success(`✅ ${data.json.noticias.length} ${data.json.noticias.length === 1 ? 'notícia processada' : 'notícias processadas'}. Pronto para importação em massa!`);
+        toast.success(`✅ ${noticiasAgregadas.length} ${noticiasAgregadas.length === 1 ? 'notícia processada' : 'notícias processadas'}. Pronto para importação em massa!`);
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Erro desconhecido';
-      
-      if (errorMessage === 'FRONTEND_TIMEOUT') {
-        toast.error('⏱️ Timeout: o processamento está demorando muito. Tente com menos itens (recomendado: 1-3 por vez).', {
-          duration: 6000
-        });
+      if (errorMessage === 'ITEM_TIMEOUT') {
+        toast.error('⏱️ Timeout em um item. Tente novamente ou reduza a quantidade.', { duration: 6000 });
       } else {
-        toast.error(errorMessage, {
-          duration: 5000
-        });
+        toast.error(errorMessage, { duration: 5000 });
       }
-      
       console.error('[JsonGenerator] Erro final:', err);
     } finally {
       setLoading(false);
