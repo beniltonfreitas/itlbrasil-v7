@@ -9,7 +9,7 @@ refresh_token_rotation_enabled = true
 session_timeout = 86400
 
 [functions.reporter-batch]
-verify_jwt = true
+verify_jwt = false
 
 [functions.bootstrap-superadmin]
 verify_jwt = false

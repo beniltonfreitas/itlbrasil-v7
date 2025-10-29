@@ -19,18 +19,19 @@ const JsonGenerator = () => {
   const [generatedJson, setGeneratedJson] = useState("");
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [inputDirty, setInputDirty] = useState(false);
 
   const parseInput = () => {
     const lines = input.split("\n").filter(line => line.trim());
     
     if (lines.length === 0) {
       toast.error("Cole pelo menos 1 link de notícia.");
-      return;
+      return false;
     }
 
     if (lines.length > 10) {
       toast.error("Máximo de 10 links por vez.");
-      return;
+      return false;
     }
 
     const items: ParsedItem[] = [];
@@ -56,11 +57,13 @@ const JsonGenerator = () => {
 
     if (errors.length > 0) {
       toast.error(errors.join("\n"));
-      return;
+      return false;
     }
 
     setParsedItems(items);
+    setInputDirty(false);
     toast.success(`${items.length} ${items.length === 1 ? 'item detectado' : 'itens detectados'}`);
+    return true;
   };
 
   const removeItem = (index: number) => {
@@ -68,9 +71,10 @@ const JsonGenerator = () => {
   };
 
   const handleGenerate = async () => {
+    // Se não há itens parseados, tenta parsear automaticamente
     if (parsedItems.length === 0) {
-      toast.error("Clique em 'Analisar Links' primeiro.");
-      return;
+      const success = parseInput();
+      if (!success) return;
     }
 
     setLoading(true);
@@ -94,6 +98,12 @@ const JsonGenerator = () => {
       if (functionError) {
         console.error('[JsonGenerator] Erro do Supabase:', functionError);
         console.error('[JsonGenerator] Detalhes completos:', JSON.stringify(functionError, null, 2));
+        
+        // Detectar erro de transporte (Failed to send a request to the Edge Function)
+        if (functionError.name === 'FunctionsFetchError' || 
+            (functionError.message && functionError.message.includes('Failed to send a request'))) {
+          throw new Error('🔌 Não foi possível contatar o servidor (Edge Function). Tente novamente. Se persistir, recarregue a página.');
+        }
         
         // Tratamento específico de erros
         if (functionError.message?.includes('402') || functionError.message?.includes('CREDITS_INSUFFICIENT')) {
@@ -178,7 +188,12 @@ const JsonGenerator = () => {
               <Textarea
                 id="links"
                 value={input}
-                onChange={(e) => setInput(e.target.value)}
+                onChange={(e) => {
+                  setInput(e.target.value);
+                  if (parsedItems.length > 0) {
+                    setInputDirty(true);
+                  }
+                }}
                 placeholder="https://exemplo.com.br/noticia-1&#10;https://exemplo.com.br/noticia-2 | https://exemplo.com.br/imagem.jpg&#10;https://exemplo.com.br/noticia-3"
                 className="min-h-[200px] bg-[#2B2B2B] border-[#5B3BE8]/30 text-white font-mono text-sm"
               />
@@ -196,8 +211,9 @@ const JsonGenerator = () => {
               {parsedItems.length > 0 && (
                 <Button
                   onClick={handleGenerate}
-                  disabled={loading}
+                  disabled={loading || inputDirty}
                   className="bg-[#5B3BE8] hover:bg-[#5B3BE8]/80 text-white"
+                  title={inputDirty ? "O texto foi modificado. Clique em 'Analisar Links' novamente." : ""}
                 >
                   {loading ? (
                     <>
