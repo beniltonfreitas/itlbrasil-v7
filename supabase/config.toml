@@ -8,6 +8,9 @@ refresh_token_rotation_enabled = true
 # Tempo de inatividade máxima (24 horas)
 session_timeout = 86400
 
+[functions.reporter-batch]
+verify_jwt = true
+
 [functions.bootstrap-superadmin]
 verify_jwt = false
 

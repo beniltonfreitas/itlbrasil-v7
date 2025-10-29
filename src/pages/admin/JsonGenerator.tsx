@@ -1,72 +1,110 @@
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
-import { Sparkles, Copy, Check, Link2, Image, AlertCircle, Loader2, FileJson } from "lucide-react";
+import { Copy, Check, Link2, AlertCircle, Loader2, FileJson, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
+interface ParsedItem {
+  newsUrl: string;
+  imageUrl?: string;
+}
+
 const JsonGenerator = () => {
-  const [newsUrl, setNewsUrl] = useState("");
-  const [imageUrl, setImageUrl] = useState("");
+  const [input, setInput] = useState("");
+  const [parsedItems, setParsedItems] = useState<ParsedItem[]>([]);
   const [generatedJson, setGeneratedJson] = useState("");
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [error, setError] = useState("");
 
-  const handleGenerate = async () => {
-    if (!newsUrl.trim()) {
-      toast.error("Por favor, insira a URL da notícia");
+  const parseInput = () => {
+    const lines = input.split("\n").filter(line => line.trim());
+    
+    if (lines.length === 0) {
+      toast.error("Cole pelo menos 1 link de notícia.");
       return;
     }
 
-    // Validate URL format
-    try {
-      new URL(newsUrl);
-    } catch {
-      toast.error("URL inválida. Por favor, insira uma URL completa (ex: https://exemplo.com/noticia)");
+    if (lines.length > 10) {
+      toast.error("Máximo de 10 links por vez.");
       return;
     }
 
-    if (imageUrl && imageUrl.trim()) {
-      try {
-        new URL(imageUrl);
-      } catch {
-        toast.error("URL da imagem inválida");
+    const items: ParsedItem[] = [];
+    const errors: string[] = [];
+
+    lines.forEach((line, index) => {
+      const parts = line.split(/[|;]/).map(p => p.trim());
+      const newsUrl = parts[0];
+      const imageUrl = parts[1];
+
+      if (!newsUrl.match(/^https?:\/\/.+/)) {
+        errors.push(`Linha ${index + 1}: URL inválida`);
         return;
       }
+
+      if (imageUrl && !imageUrl.match(/^https?:\/\/.+/)) {
+        errors.push(`Linha ${index + 1}: URL da imagem inválida`);
+        return;
+      }
+
+      items.push({ newsUrl, imageUrl });
+    });
+
+    if (errors.length > 0) {
+      toast.error(errors.join("\n"));
+      return;
+    }
+
+    setParsedItems(items);
+    toast.success(`${items.length} ${items.length === 1 ? 'item detectado' : 'itens detectados'}`);
+  };
+
+  const removeItem = (index: number) => {
+    setParsedItems(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleGenerate = async () => {
+    if (parsedItems.length === 0) {
+      toast.error("Clique em 'Analisar Links' primeiro.");
+      return;
     }
 
     setLoading(true);
-    setError("");
     setGeneratedJson("");
 
     try {
-      const { data, error: functionError } = await supabase.functions.invoke('reporter-ai', {
-        body: { 
-          newsUrl: newsUrl.trim(),
-          imageUrl: imageUrl.trim() || undefined
-        }
+      const { data, error: functionError } = await supabase.functions.invoke('reporter-batch', {
+        body: { items: parsedItems }
       });
 
       if (functionError) {
-        throw functionError;
+        if (functionError.message.includes('402')) {
+          throw new Error('Créditos insuficientes no Lovable AI. Vá em Settings > Workspace > Usage para adicionar créditos.');
+        }
+        if (functionError.message.includes('429')) {
+          throw new Error('Limite de requisições excedido. Aguarde alguns minutos e tente novamente.');
+        }
+        throw new Error(functionError.message);
       }
 
-      if (!data.success) {
-        throw new Error(data.error || 'Erro ao gerar JSON');
+      if (!data || !data.success) {
+        throw new Error(data?.error || 'Erro ao gerar JSON');
       }
 
-      const formattedJson = JSON.stringify(data.json, null, 2);
-      setGeneratedJson(formattedJson);
-      toast.success("JSON gerado com sucesso!");
+      const jsonFormatted = JSON.stringify(data.json, null, 2);
+      setGeneratedJson(jsonFormatted);
+
+      if (data.failed && data.failed.length > 0) {
+        toast.error(`${data.failed.length} ${data.failed.length === 1 ? 'item falhou' : 'itens falharam'}. JSON gerado com os itens válidos.`);
+      } else {
+        toast.success(`${data.json.noticias.length} ${data.json.noticias.length === 1 ? 'notícia processada' : 'notícias processadas'}. Pronto para importação em massa.`);
+      }
     } catch (err) {
-      console.error('Error generating JSON:', err);
       const errorMessage = err instanceof Error ? err.message : 'Erro desconhecido';
-      setError(errorMessage);
       toast.error(`Erro: ${errorMessage}`);
     } finally {
       setLoading(false);
@@ -74,233 +112,163 @@ const JsonGenerator = () => {
   };
 
   const handleCopy = async () => {
-    if (!generatedJson) return;
-    
-    try {
-      await navigator.clipboard.writeText(generatedJson);
-      setCopied(true);
-      toast.success("JSON copiado! Cole na Importação em Massa.");
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      toast.error("Erro ao copiar JSON");
-    }
+    await navigator.clipboard.writeText(generatedJson);
+    setCopied(true);
+    toast.success("JSON copiado! Cole na Importação em Massa.");
+    setTimeout(() => setCopied(false), 2000);
   };
 
   const handleClear = () => {
-    setNewsUrl("");
-    setImageUrl("");
+    setInput("");
+    setParsedItems([]);
     setGeneratedJson("");
-    setError("");
-    setCopied(false);
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold flex items-center gap-2">
-          <FileJson className="h-8 w-8" style={{ color: '#5B3BE8' }} />
-          Gerador de JSON - Padrão Repórter Pró
-        </h1>
-        <p className="text-muted-foreground mt-1">
-          Insira o link da matéria e imagem. O sistema gerará o JSON pronto para importação em massa.
-        </p>
-      </div>
-
-      <Card className="border-[#5B3BE8]/20" style={{ backgroundColor: '#1E1E1E' }}>
-        <CardHeader>
-          <CardTitle className="text-white">📰 Gerador de JSON</CardTitle>
-          <CardDescription className="text-gray-300">
-            Cole o link da notícia (Agência Brasil, etc.) e o link da imagem-base. O sistema gerará o JSON formatado automaticamente.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="newsUrl" className="flex items-center gap-2 text-white">
-              <Link2 className="h-4 w-4" />
-              🔗 Link da Notícia *
-            </Label>
-            <Input
-              id="newsUrl"
-              type="url"
-              placeholder="https://agenciabrasil.ebc.com.br/..."
-              value={newsUrl}
-              onChange={(e) => setNewsUrl(e.target.value)}
-              disabled={loading}
-              className="bg-[#2B2B2B] border-[#5B3BE8]/30 text-white placeholder:text-gray-400"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="imageUrl" className="flex items-center gap-2 text-white">
-              <Image className="h-4 w-4" />
-              🖼️ Link da Imagem (opcional)
-            </Label>
-            <Input
-              id="imageUrl"
-              type="url"
-              placeholder="https://imagens.ebc.com.br/..."
-              value={imageUrl}
-              onChange={(e) => setImageUrl(e.target.value)}
-              disabled={loading}
-              className="bg-[#2B2B2B] border-[#5B3BE8]/30 text-white placeholder:text-gray-400"
-            />
-            <p className="text-xs text-gray-400">
-              Se não informado, a IA tentará extrair a imagem principal da notícia
+    <div className="min-h-screen bg-[#1E1E1E] p-6">
+      <Card className="max-w-5xl mx-auto p-8 bg-[#1E1E1E] border-[#5B3BE8]/20">
+        <div className="space-y-6">
+          <div>
+            <h1 className="text-3xl font-bold text-white flex items-center gap-3 mb-2">
+              <FileJson className="w-8 h-8 text-[#5B3BE8]" />
+              Gerador de JSON - Repórter Pró
+            </h1>
+            <p className="text-gray-400">
+              Cole de 1 a 10 links de notícia (um por linha). Opcionalmente, adicione o link da imagem separado por | ou ;
             </p>
           </div>
 
-          <div className="flex gap-2">
-            <Button 
-              onClick={handleGenerate} 
-              disabled={loading || !newsUrl.trim()}
-              className="flex-1 text-white font-semibold"
-              style={{ backgroundColor: '#5B3BE8' }}
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Gerando JSON...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="h-4 w-4 mr-2" />
-                  ⚡ Gerar JSON
-                </>
-              )}
-            </Button>
-            
-            {(generatedJson || error) && (
-              <Button 
-                variant="outline" 
-                onClick={handleClear}
-                disabled={loading}
-                className="bg-[#2B2B2B] border-[#5B3BE8]/30 text-white hover:bg-[#3B3B3B]"
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="links" className="text-white mb-2 block">
+                🔗 Links das Notícias (1 por linha)
+              </Label>
+              <Textarea
+                id="links"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="https://exemplo.com.br/noticia-1&#10;https://exemplo.com.br/noticia-2 | https://exemplo.com.br/imagem.jpg&#10;https://exemplo.com.br/noticia-3"
+                className="min-h-[200px] bg-[#2B2B2B] border-[#5B3BE8]/30 text-white font-mono text-sm"
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <Button
+                onClick={parseInput}
+                disabled={loading || !input.trim()}
+                className="bg-[#5B3BE8] hover:bg-[#5B3BE8]/80 text-white"
               >
+                <Link2 className="w-4 h-4 mr-2" />
+                Analisar Links
+              </Button>
+              {parsedItems.length > 0 && (
+                <Button
+                  onClick={handleGenerate}
+                  disabled={loading}
+                  className="bg-[#5B3BE8] hover:bg-[#5B3BE8]/80 text-white"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Gerando...
+                    </>
+                  ) : (
+                    <>
+                      <FileJson className="w-4 h-4 mr-2" />
+                      ⚡ Gerar JSON
+                    </>
+                  )}
+                </Button>
+              )}
+              <Button
+                onClick={handleClear}
+                variant="outline"
+                className="border-[#5B3BE8]/30 text-gray-400 hover:text-white hover:bg-[#2B2B2B]"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
                 Limpar
               </Button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {error && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
-      {generatedJson && (
-        <Card className="border-[#5B3BE8]/20" style={{ backgroundColor: '#1E1E1E' }}>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-white">📦 Resultado</CardTitle>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleCopy}
-                className="gap-2 bg-[#2B2B2B] border-[#5B3BE8]/30 text-white hover:bg-[#3B3B3B]"
-              >
-                {copied ? (
-                  <>
-                    <Check className="h-4 w-4" />
-                    Copiado!
-                  </>
-                ) : (
-                  <>
-                    <Copy className="h-4 w-4" />
-                    📋 Copiar JSON
-                  </>
-                )}
-              </Button>
             </div>
-            <CardDescription className="text-gray-300">
-              O JSON gerado aparecerá aqui. Copie e cole na <strong>Importação em Massa</strong>.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Textarea
-              value={generatedJson}
-              readOnly
-              className="font-mono text-sm min-h-[400px] bg-[#2B2B2B] border-[#5B3BE8]/30"
-              style={{ color: '#FFD24C' }}
-            />
-          </CardContent>
-        </Card>
-      )}
-
-      <Card className="border-[#5B3BE8]/20" style={{ backgroundColor: '#1E1E1E' }}>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2" style={{ color: '#5B3BE8' }}>
-            <AlertCircle className="h-5 w-5" />
-            💡 Como usar o Gerador JSON
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <p className="font-medium mb-2 text-white">📋 Passo a passo:</p>
-            <ol className="list-decimal list-inside space-y-1 text-sm text-gray-300">
-              <li>Acesse <strong>Repórter AI → Gerador JSON</strong></li>
-              <li>Informe o link da notícia (obrigatório)</li>
-              <li>Informe o link da imagem (opcional)</li>
-              <li>Clique em <strong>"⚡ Gerar JSON"</strong></li>
-              <li>Aguarde 10-20 segundos (processamento IA)</li>
-              <li>O JSON aparecerá formatado na área de resultado</li>
-              <li>Clique em <strong>"📋 Copiar JSON"</strong></li>
-              <li>Vá para <strong>Importar em Massa</strong> e cole o JSON</li>
-            </ol>
           </div>
 
-          <div className="p-4 bg-[#2B2B2B] rounded-lg border border-[#5B3BE8]/20 space-y-3">
-            <p className="font-medium text-sm text-white">✅ Formato JSON gerado:</p>
-            <ul className="space-y-2 text-xs text-gray-300">
-              <li className="flex items-start gap-2">
-                <code className="bg-[#1E1E1E] px-2 py-0.5 rounded font-mono" style={{ color: '#FFD24C' }}>
-                  categoria
-                </code>
-                <span>Automaticamente classificada pela IA</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <code className="bg-[#1E1E1E] px-2 py-0.5 rounded font-mono" style={{ color: '#FFD24C' }}>
-                  titulo
-                </code>
-                <span>Extraído e formatado pela IA</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <code className="bg-[#1E1E1E] px-2 py-0.5 rounded font-mono" style={{ color: '#FFD24C' }}>
-                  slug
-                </code>
-                <span>Gerado automaticamente</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <code className="bg-[#1E1E1E] px-2 py-0.5 rounded font-mono" style={{ color: '#FFD24C' }}>
-                  imagem
-                </code>
-                <span>Objeto com hero, og, card, alt e credito</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <code className="bg-[#1E1E1E] px-2 py-0.5 rounded font-mono" style={{ color: '#FFD24C' }}>
-                  tags
-                </code>
-                <span>12 tags relevantes geradas pela IA</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <code className="bg-[#1E1E1E] px-2 py-0.5 rounded font-mono" style={{ color: '#FFD24C' }}>
-                  seo
-                </code>
-                <span>Meta título e descrição otimizados</span>
-              </li>
-            </ul>
-          </div>
+          {parsedItems.length > 0 && (
+            <div className="space-y-2">
+              <Label className="text-white">
+                📋 Itens Detectados ({parsedItems.length})
+              </Label>
+              <div className="space-y-2">
+                {parsedItems.map((item, index) => (
+                  <div
+                    key={index}
+                    className="flex items-start gap-3 p-3 bg-[#2B2B2B] rounded-lg border border-[#5B3BE8]/20"
+                  >
+                    <div className="flex-1 space-y-1">
+                      <p className="text-sm text-white truncate">{item.newsUrl}</p>
+                      {item.imageUrl && (
+                        <p className="text-xs text-gray-400 truncate">🖼️ {item.imageUrl}</p>
+                      )}
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => removeItem(index)}
+                      className="text-red-400 hover:text-red-300 hover:bg-red-400/10"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {generatedJson && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-white">📦 JSON Gerado</Label>
+                <Button
+                  onClick={handleCopy}
+                  size="sm"
+                  className="bg-[#5B3BE8] hover:bg-[#5B3BE8]/80 text-white"
+                >
+                  {copied ? (
+                    <>
+                      <Check className="w-4 h-4 mr-2" />
+                      Copiado!
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-4 h-4 mr-2" />
+                      Copiar JSON
+                    </>
+                  )}
+                </Button>
+              </div>
+              <Textarea
+                value={generatedJson}
+                readOnly
+                className="min-h-[400px] bg-[#2B2B2B] border-[#5B3BE8]/30 text-[#FFD24C] font-mono text-sm"
+              />
+            </div>
+          )}
 
           <Alert className="bg-[#2B2B2B] border-[#5B3BE8]/30">
-            <AlertCircle className="h-4 w-4" style={{ color: '#5B3BE8' }} />
-            <AlertDescription className="text-xs text-gray-300">
-              <strong className="text-white">Tecnologia:</strong> Este gerador usa <strong style={{ color: '#5B3BE8' }}>Lovable AI (Gemini 2.5 Flash)</strong> para 
-              extrair, processar e formatar notícias automaticamente no padrão Repórter Pró v2.1.
+            <AlertCircle className="h-4 w-4 text-[#5B3BE8]" />
+            <AlertDescription className="text-gray-300 ml-2">
+              <strong className="text-white">Como usar:</strong>
+              <ol className="list-decimal list-inside mt-2 space-y-1">
+                <li>Cole os links das notícias (1 por linha)</li>
+                <li>Opcional: adicione | ou ; seguido do link da imagem</li>
+                <li>Clique em "Analisar Links" para validar</li>
+                <li>Clique em "⚡ Gerar JSON" e aguarde (10-30s por item)</li>
+                <li>Copie o JSON gerado e cole em "Importação em Massa"</li>
+              </ol>
+              <p className="mt-3 text-sm text-gray-400">
+                ⏱️ Tempo médio: 10-20 segundos por notícia. O JSON gerado está no formato padrão Repórter Pró com imagem (hero/og/card/alt/credito), 12 tags, SEO otimizado e HTML semântico.
+              </p>
             </AlertDescription>
           </Alert>
-        </CardContent>
+        </div>
       </Card>
     </div>
   );
