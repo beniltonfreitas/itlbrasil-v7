@@ -208,22 +208,22 @@ const AdminLayout = () => {
       key: "meus-projetos",
       submenu: [
         { 
-          name: "ITL Brasil", 
-          href: "https://itlbrasil.com.br", 
+          name: "ITL BRASIL", 
+          href: "https://itlbrasil.com/", 
           icon: Globe, 
           permission: "project-itl",
           external: true
         },
         { 
-          name: "CDN", 
-          href: "https://cdn.itlbrasil.com.br", 
+          name: "CDM BRASIL", 
+          href: "https://cdmbrasil.com.br/", 
           icon: CloudCog, 
-          permission: "project-cdn",
+          permission: "project-cdm",
           external: true
         },
         { 
           name: "CONSABS", 
-          href: "https://consabs.site", 
+          href: "https://consabs.site/", 
           icon: Building2, 
           permission: "project-consabs",
           external: true
