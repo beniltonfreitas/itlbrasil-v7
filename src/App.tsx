@@ -96,7 +96,8 @@ const ThemedPageWrapper = ({ children }: { children: React.ReactNode }) => {
   return <ThemeComponent>{children}</ThemeComponent>;
 };
 
-const AppRoutes = () => {
+// Public routes component with forced light theme
+const PublicRoutes = () => {
   return (
     <Routes>
       <Route path="/" element={<ThemedPageWrapper><Index /></ThemedPageWrapper>} />
@@ -104,7 +105,6 @@ const AppRoutes = () => {
       <Route path="/sobre" element={<ThemedPageWrapper><About /></ThemedPageWrapper>} />
       <Route path="/contato" element={<ThemedPageWrapper><Contact /></ThemedPageWrapper>} />
       
-      {/* WebStories routes */}
       {/* Editions routes (public) */}
       <Route path="/jornal" element={<ThemedPageWrapper><EditionsListPublic /></ThemedPageWrapper>} />
       <Route path="/jornal/edicao/:slug/ler" element={<EditionReader />} />
@@ -113,17 +113,24 @@ const AppRoutes = () => {
       {/* Category routes */}
       <Route path="/categoria/:slug" element={<ThemedPageWrapper><Category /></ThemedPageWrapper>} />
       
-      {/* Auth Route - Independent from admin */}
-      <Route path="/auth" element={<SecureLogin />} />
-      
+      {/* Catch-all for public routes */}
+      <Route path="*" element={<ThemedPageWrapper><NotFound /></ThemedPageWrapper>} />
+    </Routes>
+  );
+};
+
+// Admin routes component with dynamic theme switching
+const AdminRoutes = () => {
+  return (
+    <Routes>
       {/* Admin Login Redirect */}
-      <Route path="/admin/login" element={<Navigate to="/auth" replace />} />
+      <Route path="/login" element={<Navigate to="/auth" replace />} />
       
       {/* Admin Gate - handles auth and redirects */}
-      <Route path="/admin" element={<Navigate to="/admin/" replace />} />
+      <Route path="/" element={<Navigate to="/admin/" replace />} />
       
       {/* Protected Admin Routes */}
-      <Route path="/admin/*" element={
+      <Route path="/*" element={
         <AdminErrorBoundary>
           <ProtectedRoute>
             <AdminLayout />
@@ -215,9 +222,6 @@ const AppRoutes = () => {
         {/* NFS-e Route */}
         <Route path="nfse" element={<NFSeManager />} />
       </Route>
-      
-      {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-      <Route path="*" element={<ThemedPageWrapper><NotFound /></ThemedPageWrapper>} />
     </Routes>
   );
 };
@@ -225,19 +229,46 @@ const AppRoutes = () => {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <HelmetProvider>
-      <NextThemesProvider attribute="class" defaultTheme="light" enableSystem={false}>
-        <TooltipProvider>
-          <SecureAuthProvider>
-            <ThemeProvider>
-              <Toaster />
-              <Sonner />
-              <BrowserRouter>
-                <AppRoutes />
-              </BrowserRouter>
-            </ThemeProvider>
-          </SecureAuthProvider>
-        </TooltipProvider>
-      </NextThemesProvider>
+      <BrowserRouter>
+        <Routes>
+          {/* Public routes with FORCED light theme */}
+          <Route path="/*" element={
+            <NextThemesProvider attribute="class" defaultTheme="light" forcedTheme="light" enableSystem={false}>
+              <TooltipProvider>
+                <SecureAuthProvider>
+                  <ThemeProvider>
+                    <Toaster />
+                    <Sonner />
+                    <PublicRoutes />
+                  </ThemeProvider>
+                </SecureAuthProvider>
+              </TooltipProvider>
+            </NextThemesProvider>
+          } />
+          
+          {/* Admin routes with dynamic theme switching */}
+          <Route path="/admin/*" element={
+            <NextThemesProvider attribute="class" defaultTheme="light" enableSystem={false}>
+              <TooltipProvider>
+                <SecureAuthProvider>
+                  <ThemeProvider>
+                    <Toaster />
+                    <Sonner />
+                    <AdminRoutes />
+                  </ThemeProvider>
+                </SecureAuthProvider>
+              </TooltipProvider>
+            </NextThemesProvider>
+          } />
+          
+          {/* Auth/Login route with dynamic theme switching */}
+          <Route path="/auth" element={
+            <NextThemesProvider attribute="class" defaultTheme="light" enableSystem={false}>
+              <SecureLogin />
+            </NextThemesProvider>
+          } />
+        </Routes>
+      </BrowserRouter>
     </HelmetProvider>
   </QueryClientProvider>
 );
