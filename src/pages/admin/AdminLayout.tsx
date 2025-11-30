@@ -284,6 +284,11 @@ const AdminLayout = () => {
   const navigation = allNavigation.filter(item => {
     if (permissionsLoading) return true; // Show all while loading
     
+    // Menu "Em Breve" exclusivo para Super Admin
+    if (item.key === "em-breve") {
+      return hasRole('superadmin');
+    }
+    
     // Para grupos, mostrar se pelo menos um item do submenu tem permissão
     if (item.type === "group" && item.submenu) {
       const hasAnyPermission = item.submenu.some(subItem => hasPermission(subItem.permission));
@@ -351,7 +356,7 @@ const AdminLayout = () => {
                   {hasRole('superadmin') ? (
                     <span className="flex items-center gap-1">
                       <Crown className="h-3 w-3" />
-                      Super Admin
+                      Master Admin
                     </span>
                   ) : hasRole('admin') ? 'Admin' :
                     hasRole('editor') ? 'Editor' :
