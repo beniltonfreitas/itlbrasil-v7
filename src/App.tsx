@@ -264,7 +264,15 @@ const App = () => (
           {/* Auth/Login route with dynamic theme switching */}
           <Route path="/auth" element={
             <NextThemesProvider attribute="class" defaultTheme="light" enableSystem={false}>
-              <SecureLogin />
+              <TooltipProvider>
+                <SecureAuthProvider>
+                  <ThemeProvider>
+                    <Toaster />
+                    <Sonner />
+                    <SecureLogin />
+                  </ThemeProvider>
+                </SecureAuthProvider>
+              </TooltipProvider>
             </NextThemesProvider>
           } />
         </Routes>
