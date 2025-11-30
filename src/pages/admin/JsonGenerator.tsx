@@ -1,12 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
-import { Copy, Check, Link2, AlertCircle, Loader2, FileJson, Trash2 } from "lucide-react";
+import { Copy, Check, Link2, AlertCircle, Loader2, FileJson, Trash2, History, Clock } from "lucide-react";
 import { toast } from "sonner";
+import { useJsonHistory } from "@/hooks/useJsonHistory";
+import { formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 interface ParsedItem {
   newsUrl: string;
@@ -20,6 +23,12 @@ const JsonGenerator = () => {
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [inputDirty, setInputDirty] = useState(false);
+  
+  const { saveToHistory, loadHistory, deleteFromHistory, history, isLoading: historyLoading } = useJsonHistory();
+
+  useEffect(() => {
+    loadHistory('json-generator');
+  }, []);
 
   const parseInput = () => {
     const lines = input.split("\n").filter(line => line.trim());
@@ -176,6 +185,11 @@ const JsonGenerator = () => {
       const jsonFinal = { noticias: noticiasAgregadas };
       const jsonFormatted = JSON.stringify(jsonFinal, null, 2);
       setGeneratedJson(jsonFormatted);
+
+      // Save to history
+      const firstUrl = parsedItems[0]?.newsUrl || 'batch';
+      const firstImage = parsedItems[0]?.imageUrl;
+      await saveToHistory(firstUrl, jsonFinal, 'json-generator', firstImage, 'done');
 
       if (falhas.length > 0) {
         console.warn('[JsonGenerator] Itens que falharam:', falhas);
@@ -342,6 +356,55 @@ const JsonGenerator = () => {
                 readOnly
                 className="min-h-[400px] bg-[#2B2B2B] border-[#5B3BE8]/30 text-[#FFD24C] font-mono text-sm"
               />
+            </div>
+          )}
+
+          {history.length > 0 && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <History className="w-5 h-5 text-[#5B3BE8]" />
+                <Label className="text-white">📚 Histórico Salvo ({history.length})</Label>
+              </div>
+              <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                {history.map((item) => (
+                  <div
+                    key={item.id}
+                    className="p-3 bg-[#2B2B2B] rounded-lg border border-[#5B3BE8]/20 space-y-2"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <p className="text-sm text-white truncate">{item.news_url}</p>
+                        <p className="text-xs text-gray-400 flex items-center gap-1 mt-1">
+                          <Clock className="w-3 h-3" />
+                          {formatDistanceToNow(new Date(item.created_at), { addSuffix: true, locale: ptBR })}
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            const jsonStr = JSON.stringify(item.generated_json, null, 2);
+                            navigator.clipboard.writeText(jsonStr);
+                            toast.success("JSON copiado!");
+                          }}
+                          className="text-[#5B3BE8] hover:text-[#5B3BE8]/80 hover:bg-[#5B3BE8]/10"
+                        >
+                          <Copy className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => deleteFromHistory(item.id)}
+                          className="text-red-400 hover:text-red-300 hover:bg-red-400/10"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 

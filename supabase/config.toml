@@ -50,6 +50,12 @@ verify_jwt = true
 [functions.reporter-worker]
 verify_jwt = false
 
+[functions.jornalista-pro-tools]
+verify_jwt = true
+
+[functions.rewrite-article]
+verify_jwt = true
+
 # Cron job for reporter-worker: Run every 2 minutes
 [cron."reporter-worker"]
 schedule = "*/2 * * * *"
