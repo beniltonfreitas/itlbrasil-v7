@@ -178,25 +178,13 @@ const AdminLayout = () => {
       ]
     },
     
-    // 2. Repórter AI
+    // 2. Repórter Pró (menu principal)
     { 
-      name: "Repórter AI", 
-      icon: Sparkles, 
-      permission: "reporter-ai-group",
-      type: "group",
-      key: "reporter-ai",
-      submenu: [
-        { name: "Repórter AI", href: "/admin/reporter-ai-v2", icon: Sparkles, permission: "reporter-ai" },
-        { name: "Gerador JSON", href: "/admin/json-generator", icon: FileText, permission: "json-generator" },
-        { 
-          name: "Repórter Pró", 
-          href: "https://chatgpt.com/share/6901212f-cb00-8002-8684-d71080179ed4", 
-          icon: ExternalLink, 
-          permission: "reporter-pro",
-          external: true 
-        },
-        { name: "Repórter GPT", href: "https://chatgpt.com/g/g-6900f51c074c819192f61cb9e3f9010f-reporter-ai", icon: ExternalLink, permission: "reporter-gpt", external: true },
-      ]
+      name: "Repórter Pró", 
+      href: "https://chatgpt.com/share/6901212f-cb00-8002-8684-d71080179ed4", 
+      icon: ExternalLink, 
+      permission: "reporter-pro",
+      external: true 
     },
     
     // 3. Cadastrar Notícias
@@ -264,6 +252,11 @@ const AdminLayout = () => {
       type: "group",
       key: "em-breve",
       submenu: [
+        // Repórter AI (movido para Em Breve)
+        { name: "Repórter AI", href: "/admin/reporter-ai-v2", icon: Sparkles, permission: "reporter-ai" },
+        { name: "Gerador JSON", href: "/admin/json-generator", icon: FileText, permission: "json-generator" },
+        { name: "Repórter GPT", href: "https://chatgpt.com/g/g-6900f51c074c819192f61cb9e3f9010f-reporter-ai", icon: ExternalLink, permission: "reporter-gpt", external: true },
+        
         // Web Stories movido para cá
         { name: "Web Stories", href: "/admin/webstories", icon: BookOpen, permission: "webstories" },
         

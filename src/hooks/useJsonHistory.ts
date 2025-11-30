@@ -33,7 +33,7 @@ export const useJsonHistory = () => {
         return null;
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('json_generation_history')
         .insert({
           user_id: user.id,
@@ -71,7 +71,7 @@ export const useJsonHistory = () => {
         return;
       }
 
-      let query = supabase
+      let query = (supabase as any)
         .from('json_generation_history')
         .select('*')
         .eq('user_id', user.id)
@@ -101,7 +101,7 @@ export const useJsonHistory = () => {
 
   const deleteFromHistory = async (id: string) => {
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('json_generation_history')
         .delete()
         .eq('id', id);
