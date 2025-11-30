@@ -196,55 +196,7 @@ const AdminLayout = () => {
     // 5. Importar em Massa
     { name: "Importar em Massa", href: "/admin/bulk-import", icon: Upload, permission: "bulk-import" },
     
-    // 6. Meus Projetos
-    { 
-      name: "Meus Projetos", 
-      icon: Briefcase, 
-      permission: "projects-group",
-      type: "group",
-      key: "meus-projetos",
-      submenu: [
-        { 
-          name: "ITL BRASIL", 
-          href: "https://itlbrasil.com/", 
-          icon: Globe, 
-          permission: "project-itl",
-          external: true
-        },
-        { 
-          name: "CDM BRASIL", 
-          href: "https://cdmbrasil.com.br/", 
-          icon: CloudCog, 
-          permission: "project-cdm",
-          external: true
-        },
-        { 
-          name: "CONSABS", 
-          href: "https://consabs.site/", 
-          icon: Building2, 
-          permission: "project-consabs",
-          external: true
-        },
-      ]
-    },
-    
-    // 7. Treinamento
-    { 
-      name: "Treinamento", 
-      icon: Video, 
-      permission: "training-group",
-      type: "group",
-      key: "treinamento",
-      submenu: [
-        { name: "YouTube", href: "/admin/training/youtube", icon: Youtube, permission: "training-youtube" },
-        { name: "TikTok", href: "/admin/training/tiktok", icon: Music, permission: "training-tiktok" },
-        { name: "Instagram", href: "/admin/training/instagram", icon: Instagram, permission: "training-instagram" },
-        { name: "Vimeo", href: "/admin/training/vimeo", icon: Film, permission: "training-vimeo" },
-        { name: "Outros Vídeos", href: "/admin/training/others", icon: Monitor, permission: "training-others" },
-      ]
-    },
-    
-    // 8. Em Breve
+    // 6. Em Breve
     { 
       name: "Em Breve", 
       icon: Clock, 
@@ -252,12 +204,24 @@ const AdminLayout = () => {
       type: "group",
       key: "em-breve",
       submenu: [
-        // Repórter AI (movido para Em Breve)
+        // ============ Meus Projetos ============
+        { name: "ITL BRASIL", href: "https://itlbrasil.com/", icon: Globe, permission: "project-itl", external: true },
+        { name: "CDM BRASIL", href: "https://cdmbrasil.com.br/", icon: CloudCog, permission: "project-cdm", external: true },
+        { name: "CONSABS", href: "https://consabs.site/", icon: Building2, permission: "project-consabs", external: true },
+        
+        // ============ Treinamento ============
+        { name: "YouTube", href: "/admin/training/youtube", icon: Youtube, permission: "training-youtube" },
+        { name: "TikTok", href: "/admin/training/tiktok", icon: Music, permission: "training-tiktok" },
+        { name: "Instagram", href: "/admin/training/instagram", icon: Instagram, permission: "training-instagram" },
+        { name: "Vimeo", href: "/admin/training/vimeo", icon: Film, permission: "training-vimeo" },
+        { name: "Outros Vídeos", href: "/admin/training/others", icon: Monitor, permission: "training-others" },
+        
+        // ============ Repórter AI ============
         { name: "Repórter AI", href: "/admin/reporter-ai-v2", icon: Sparkles, permission: "reporter-ai" },
         { name: "Gerador JSON", href: "/admin/json-generator", icon: FileText, permission: "json-generator" },
         { name: "Repórter GPT", href: "https://chatgpt.com/g/g-6900f51c074c819192f61cb9e3f9010f-reporter-ai", icon: ExternalLink, permission: "reporter-gpt", external: true },
         
-        // Web Stories movido para cá
+        // ============ Outras Funcionalidades ============
         { name: "Web Stories", href: "/admin/webstories", icon: BookOpen, permission: "webstories" },
         
         // Analytics
