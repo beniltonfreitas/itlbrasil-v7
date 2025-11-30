@@ -165,7 +165,7 @@ const AdminLayout = () => {
   };
 
   const allNavigation: NavigationItem[] = [
-    // Dashboard (com submenu)
+    // 1. Dashboard
     { 
       name: "Dashboard", 
       icon: LayoutDashboard, 
@@ -178,7 +178,7 @@ const AdminLayout = () => {
       ]
     },
     
-    // Repórter AI (logo abaixo do Dashboard)
+    // 2. Repórter AI
     { 
       name: "Repórter AI", 
       icon: Sparkles, 
@@ -199,7 +199,16 @@ const AdminLayout = () => {
       ]
     },
     
-    // Meus Projetos
+    // 3. Cadastrar Notícias
+    { name: "Cadastrar Notícias", href: "/admin/articles/new", icon: PlusCircle, permission: "article-editor" },
+    
+    // 4. Todas as Notícias
+    { name: "Todas as Notícias", href: "/admin/articles", icon: FileText, permission: "articles" },
+    
+    // 5. Importar em Massa
+    { name: "Importar em Massa", href: "/admin/bulk-import", icon: Upload, permission: "bulk-import" },
+    
+    // 6. Meus Projetos
     { 
       name: "Meus Projetos", 
       icon: Briefcase, 
@@ -231,7 +240,7 @@ const AdminLayout = () => {
       ]
     },
     
-    // Treinamento (logo abaixo de Meus Projetos)
+    // 7. Treinamento
     { 
       name: "Treinamento", 
       icon: Video, 
@@ -247,14 +256,7 @@ const AdminLayout = () => {
       ]
     },
     
-    // Menus Promovidos (ex-submenus agora standalone)
-    { name: "Todas as Notícias", href: "/admin/articles", icon: FileText, permission: "articles" },
-    { name: "Cadastrar Notícias", href: "/admin/articles/new", icon: PlusCircle, permission: "article-editor" },
-    { name: "Web Stories", href: "/admin/webstories", icon: BookOpen, permission: "webstories" },
-    { name: "Importar em Massa", href: "/admin/bulk-import", icon: Upload, permission: "bulk-import" },
-    
-    
-    // Em Breve (agrupa todos os outros menus)
+    // 8. Em Breve
     { 
       name: "Em Breve", 
       icon: Clock, 
@@ -262,6 +264,9 @@ const AdminLayout = () => {
       type: "group",
       key: "em-breve",
       submenu: [
+        // Web Stories movido para cá
+        { name: "Web Stories", href: "/admin/webstories", icon: BookOpen, permission: "webstories" },
+        
         // Analytics
         { name: "Analytics", href: "/admin/analytics", icon: BarChart3, permission: "analytics" },
         
@@ -308,7 +313,7 @@ const AdminLayout = () => {
         { name: "Acessibilidade", href: "/admin/settings/accessibility", icon: Shield, permission: "accessibility" },
         { name: "Segurança", href: "/admin/security", icon: Shield, permission: "security-settings" },
         
-        // Ferramentas (exceto Web Stories e Importar em Massa - já promovidos)
+        // Ferramentas
         { name: "Estúdio Pro", href: "/admin/studio", icon: Play, permission: "studio" },
         { name: "Gerador de Jornal", href: "/admin/tools/jornal", icon: Newspaper, permission: "edition-generator" },
         { name: "Social Post", href: "/admin/social/create", icon: Share2, permission: "social-create" },
