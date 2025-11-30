@@ -51,7 +51,9 @@ import {
   Briefcase,
   ExternalLink,
   CloudCog,
-  Building2
+  Building2,
+  Search,
+  X
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -71,6 +73,7 @@ const AdminLayout = () => {
   const { hasRole, isAdmin, isSuperAdmin, loading: permissionsLoading, userRoles, getPrimaryRole } = useSecurePermissions();
   const { collapsed, pinned, isMobile, toggle, togglePin, close } = useSidebarState();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [menuSearch, setMenuSearch] = useState("");
   
   // Buscar permissões dinâmicas do banco para admin, editor e author
   const primaryRole = getPrimaryRole();
@@ -147,6 +150,15 @@ const AdminLayout = () => {
     }));
   };
 
+  type MenuSubItem = {
+    name: string;
+    href: string;
+    icon: any;
+    permission: string;
+    external?: boolean;
+    category?: string;
+  };
+
   type NavigationItem = {
     name: string;
     icon: any;
@@ -155,13 +167,17 @@ const AdminLayout = () => {
     external?: boolean;
     type?: "group";
     key?: string;
-    submenu?: {
-      name: string;
-      href: string;
-      icon: any;
-      permission: string;
-      external?: boolean;
-    }[];
+    submenu?: MenuSubItem[];
+  };
+
+  const categories = {
+    "projetos": { label: "Meus Projetos", color: "text-blue-500", bgColor: "bg-blue-500/10" },
+    "treinamento": { label: "Treinamento", color: "text-purple-500", bgColor: "bg-purple-500/10" },
+    "reporter-ai": { label: "Repórter AI", color: "text-emerald-500", bgColor: "bg-emerald-500/10" },
+    "funcionalidades": { label: "Funcionalidades", color: "text-amber-500", bgColor: "bg-amber-500/10" },
+    "comunidade": { label: "Comunidade", color: "text-pink-500", bgColor: "bg-pink-500/10" },
+    "configuracoes": { label: "Configurações", color: "text-red-500", bgColor: "bg-red-500/10" },
+    "ferramentas": { label: "Ferramentas", color: "text-cyan-500", bgColor: "bg-cyan-500/10" },
   };
 
   const allNavigation: NavigationItem[] = [
@@ -205,79 +221,61 @@ const AdminLayout = () => {
       key: "em-breve",
       submenu: [
         // ============ Meus Projetos ============
-        { name: "ITL BRASIL", href: "https://itlbrasil.com/", icon: Globe, permission: "project-itl", external: true },
-        { name: "CDM BRASIL", href: "https://cdmbrasil.com.br/", icon: CloudCog, permission: "project-cdm", external: true },
-        { name: "CONSABS", href: "https://consabs.site/", icon: Building2, permission: "project-consabs", external: true },
+        { name: "ITL BRASIL", href: "https://itlbrasil.com/", icon: Globe, permission: "project-itl", external: true, category: "projetos" },
+        { name: "CDM BRASIL", href: "https://cdmbrasil.com.br/", icon: CloudCog, permission: "project-cdm", external: true, category: "projetos" },
+        { name: "CONSABS", href: "https://consabs.site/", icon: Building2, permission: "project-consabs", external: true, category: "projetos" },
         
         // ============ Treinamento ============
-        { name: "YouTube", href: "/admin/training/youtube", icon: Youtube, permission: "training-youtube" },
-        { name: "TikTok", href: "/admin/training/tiktok", icon: Music, permission: "training-tiktok" },
-        { name: "Instagram", href: "/admin/training/instagram", icon: Instagram, permission: "training-instagram" },
-        { name: "Vimeo", href: "/admin/training/vimeo", icon: Film, permission: "training-vimeo" },
-        { name: "Outros Vídeos", href: "/admin/training/others", icon: Monitor, permission: "training-others" },
+        { name: "YouTube", href: "/admin/training/youtube", icon: Youtube, permission: "training-youtube", category: "treinamento" },
+        { name: "TikTok", href: "/admin/training/tiktok", icon: Music, permission: "training-tiktok", category: "treinamento" },
+        { name: "Instagram", href: "/admin/training/instagram", icon: Instagram, permission: "training-instagram", category: "treinamento" },
+        { name: "Vimeo", href: "/admin/training/vimeo", icon: Film, permission: "training-vimeo", category: "treinamento" },
+        { name: "Outros Vídeos", href: "/admin/training/others", icon: Monitor, permission: "training-others", category: "treinamento" },
         
         // ============ Repórter AI ============
-        { name: "Repórter AI", href: "/admin/reporter-ai-v2", icon: Sparkles, permission: "reporter-ai" },
-        { name: "Gerador JSON", href: "/admin/json-generator", icon: FileText, permission: "json-generator" },
-        { name: "Repórter GPT", href: "https://chatgpt.com/g/g-6900f51c074c819192f61cb9e3f9010f-reporter-ai", icon: ExternalLink, permission: "reporter-gpt", external: true },
+        { name: "Repórter AI", href: "/admin/reporter-ai-v2", icon: Sparkles, permission: "reporter-ai", category: "reporter-ai" },
+        { name: "Gerador JSON", href: "/admin/json-generator", icon: FileText, permission: "json-generator", category: "reporter-ai" },
+        { name: "Repórter GPT", href: "https://chatgpt.com/g/g-6900f51c074c819192f61cb9e3f9010f-reporter-ai", icon: ExternalLink, permission: "reporter-gpt", external: true, category: "reporter-ai" },
         
         // ============ Outras Funcionalidades ============
-        { name: "Web Stories", href: "/admin/webstories", icon: BookOpen, permission: "webstories" },
+        { name: "Web Stories", href: "/admin/webstories", icon: BookOpen, permission: "webstories", category: "funcionalidades" },
+        { name: "Analytics", href: "/admin/analytics", icon: BarChart3, permission: "analytics", category: "funcionalidades" },
+        { name: "Logs de Atividade", href: "/admin/activity-logs", icon: Shield, permission: "activity-logs", category: "funcionalidades" },
+        { name: "Anúncios", href: "/admin/ads", icon: DollarSign, permission: "ads", category: "funcionalidades" },
+        { name: "Banners", href: "/admin/banners", icon: Image, permission: "banners", category: "funcionalidades" },
+        { name: "Autores", href: "/admin/authors", icon: Users, permission: "authors", category: "funcionalidades" },
+        { name: "Categorias", href: "/admin/categories", icon: Tag, permission: "categories", category: "funcionalidades" },
+        { name: "Gerenciador de Imagens", href: "/admin/image-manager", icon: Image, permission: "image-manager", category: "funcionalidades" },
+        { name: "Modelos", href: "/admin/theme", icon: Palette, permission: "themes", category: "funcionalidades" },
+        { name: "Nota Fiscal (NFS-e)", href: "/admin/nfse", icon: Receipt, permission: "nfse-manager", category: "funcionalidades" },
         
-        // Analytics
-        { name: "Analytics", href: "/admin/analytics", icon: BarChart3, permission: "analytics" },
+        // ============ Comunidade ============
+        { name: "Dashboard da Comunidade", href: "/admin/community", icon: LayoutDashboard, permission: "community-dashboard", category: "comunidade" },
+        { name: "Grupos & Espaços", href: "/admin/community/groups", icon: UserPlus, permission: "community-groups", category: "comunidade" },
+        { name: "Tópicos & Discussões", href: "/admin/community/topics", icon: MessageCircle, permission: "community-topics", category: "comunidade" },
+        { name: "Chat em Tempo Real", href: "/admin/community/chat", icon: Zap, permission: "community-chat", category: "comunidade" },
+        { name: "Eventos da Comunidade", href: "/admin/community/events", icon: Calendar, permission: "community-events", category: "comunidade" },
+        { name: "Gamificação", href: "/admin/community/gamification", icon: Trophy, permission: "community-gamification", category: "comunidade" },
+        { name: "Perfil do Usuário", href: "/admin/community/profiles", icon: User, permission: "community-profiles", category: "comunidade" },
+        { name: "Monetização", href: "/admin/community/monetization", icon: DollarSign, permission: "community-monetization", category: "comunidade" },
+        { name: "Administração da Comunidade", href: "/admin/community/admin", icon: Crown, permission: "community-admin", category: "comunidade" },
         
-        // Logs de Atividade
-        { name: "Logs de Atividade", href: "/admin/activity-logs", icon: Shield, permission: "activity-logs" },
+        // ============ Configurações ============
+        { name: "Usuários", href: "/admin/users", icon: Users, permission: "users", category: "configuracoes" },
+        { name: "Gerenciar Roles", href: "/admin/roles", icon: Crown, permission: "role-manager", category: "configuracoes" },
+        { name: "Permissões", href: "/admin/permissions-manager", icon: Shield, permission: "permissions-manager", category: "configuracoes" },
+        { name: "Configurações Gerais", href: "/admin/settings", icon: Settings, permission: "settings", category: "configuracoes" },
+        { name: "Acessibilidade", href: "/admin/settings/accessibility", icon: Shield, permission: "accessibility", category: "configuracoes" },
+        { name: "Segurança", href: "/admin/security", icon: Shield, permission: "security-settings", category: "configuracoes" },
         
-        // Anúncios
-        { name: "Anúncios", href: "/admin/ads", icon: DollarSign, permission: "ads" },
-        
-        // Banners
-        { name: "Banners", href: "/admin/banners", icon: Image, permission: "banners" },
-        
-        // Autores
-        { name: "Autores", href: "/admin/authors", icon: Users, permission: "authors" },
-        
-        // Categorias
-        { name: "Categorias", href: "/admin/categories", icon: Tag, permission: "categories" },
-        
-        // Gerenciador de Imagens
-        { name: "Gerenciador de Imagens", href: "/admin/image-manager", icon: Image, permission: "image-manager" },
-        
-        // Modelos
-        { name: "Modelos", href: "/admin/theme", icon: Palette, permission: "themes" },
-        
-        // Nota Fiscal (NFS-e)
-        { name: "Nota Fiscal (NFS-e)", href: "/admin/nfse", icon: Receipt, permission: "nfse-manager" },
-        
-        // Comunidade (todo o submenu)
-        { name: "Dashboard da Comunidade", href: "/admin/community", icon: LayoutDashboard, permission: "community-dashboard" },
-        { name: "Grupos & Espaços", href: "/admin/community/groups", icon: UserPlus, permission: "community-groups" },
-        { name: "Tópicos & Discussões", href: "/admin/community/topics", icon: MessageCircle, permission: "community-topics" },
-        { name: "Chat em Tempo Real", href: "/admin/community/chat", icon: Zap, permission: "community-chat" },
-        { name: "Eventos da Comunidade", href: "/admin/community/events", icon: Calendar, permission: "community-events" },
-        { name: "Gamificação", href: "/admin/community/gamification", icon: Trophy, permission: "community-gamification" },
-        { name: "Perfil do Usuário", href: "/admin/community/profiles", icon: User, permission: "community-profiles" },
-        { name: "Monetização", href: "/admin/community/monetization", icon: DollarSign, permission: "community-monetization" },
-        { name: "Administração da Comunidade", href: "/admin/community/admin", icon: Crown, permission: "community-admin" },
-        
-        // Configurações (todo o submenu)
-        { name: "Usuários", href: "/admin/users", icon: Users, permission: "users" },
-        { name: "Gerenciar Roles", href: "/admin/roles", icon: Crown, permission: "role-manager" },
-        { name: "Permissões", href: "/admin/permissions-manager", icon: Shield, permission: "permissions-manager" },
-        { name: "Configurações Gerais", href: "/admin/settings", icon: Settings, permission: "settings" },
-        { name: "Acessibilidade", href: "/admin/settings/accessibility", icon: Shield, permission: "accessibility" },
-        { name: "Segurança", href: "/admin/security", icon: Shield, permission: "security-settings" },
-        
-        // Ferramentas
-        { name: "Estúdio Pro", href: "/admin/studio", icon: Play, permission: "studio" },
-        { name: "Gerador de Jornal", href: "/admin/tools/jornal", icon: Newspaper, permission: "edition-generator" },
-        { name: "Social Post", href: "/admin/social/create", icon: Share2, permission: "social-create" },
-        { name: "Auto Post", href: "/admin/auto-post", icon: Zap, permission: "auto-post" },
-        { name: "Fila de Revisão", href: "/admin/queue", icon: Clock, permission: "articles-queue" },
-        { name: "Importar RSS", href: "/admin/import", icon: Upload, permission: "rss-import" },
-        { name: "Jornalista Pró", href: "/admin/tools/jornalista-pro", icon: Sparkles, permission: "jornalista-pro-tools" },
+        // ============ Ferramentas ============
+        { name: "Estúdio Pro", href: "/admin/studio", icon: Play, permission: "studio", category: "ferramentas" },
+        { name: "Gerador de Jornal", href: "/admin/tools/jornal", icon: Newspaper, permission: "edition-generator", category: "ferramentas" },
+        { name: "Social Post", href: "/admin/social/create", icon: Share2, permission: "social-create", category: "ferramentas" },
+        { name: "Auto Post", href: "/admin/auto-post", icon: Zap, permission: "auto-post", category: "ferramentas" },
+        { name: "Fila de Revisão", href: "/admin/queue", icon: Clock, permission: "articles-queue", category: "ferramentas" },
+        { name: "Importar RSS", href: "/admin/import", icon: Upload, permission: "rss-import", category: "ferramentas" },
+        { name: "Jornalista Pró", href: "/admin/tools/jornalista-pro", icon: Sparkles, permission: "jornalista-pro-tools", category: "ferramentas" },
       ]
     }
   ];
@@ -300,6 +298,19 @@ const AdminLayout = () => {
       return hasPermission(subItem.permission);
     })
   }));
+
+  // Filter navigation based on search
+  const filteredNavigation = menuSearch === "" 
+    ? navigation 
+    : navigation.map(item => ({
+        ...item,
+        submenu: item.submenu?.filter(sub => 
+          sub.name.toLowerCase().includes(menuSearch.toLowerCase())
+        )
+      })).filter(item => 
+        item.name.toLowerCase().includes(menuSearch.toLowerCase()) ||
+        (item.submenu && item.submenu.length > 0)
+      );
 
   return (
     <NextThemesProvider attribute="class" defaultTheme="light" enableSystem={false}>
@@ -442,8 +453,32 @@ const AdminLayout = () => {
             </div>
           </div>
 
+          {/* Search Input */}
+          {!collapsed && (
+            <div className="p-4 border-b border-border">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <input
+                  type="text"
+                  value={menuSearch}
+                  onChange={(e) => setMenuSearch(e.target.value)}
+                  placeholder="Buscar página..."
+                  className="w-full pl-9 pr-9 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+                {menuSearch && (
+                  <button
+                    onClick={() => setMenuSearch("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
           <nav className="p-4 space-y-2">
-            {navigation.map((item) => {
+            {filteredNavigation.map((item) => {
               // Para itens standalone (não grupos)
               if (!item.type || item.type !== "group") {
                 const isActive = !item.external && (location.pathname === item.href || 
@@ -584,45 +619,66 @@ const AdminLayout = () => {
                       </CollapsibleTrigger>
                       
                       <CollapsibleContent className="ml-6 mt-1 space-y-1">
-                        {item.submenu.map((subItem) => {
-                          const isSubActive = location.pathname === subItem.href;
+                        {(() => {
+                          let lastCategory: string | null = null;
                           
-                          // Se for link externo, usar <a> ao invés de <NavLink>
-                          if ((subItem as any).external) {
+                          return item.submenu.map((subItem, index) => {
+                            const isSubActive = location.pathname === subItem.href;
+                            const showCategoryHeader = subItem.category && subItem.category !== lastCategory;
+                            
+                            if (subItem.category) {
+                              lastCategory = subItem.category;
+                            }
+                            
+                            const categoryInfo = subItem.category ? categories[subItem.category as keyof typeof categories] : null;
+                            
                             return (
-                              <a
-                                key={subItem.name}
-                                href={subItem.href}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className={cn(
-                                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                                  "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                              <div key={subItem.name}>
+                                {showCategoryHeader && categoryInfo && (
+                                  <div className={cn(
+                                    "flex items-center gap-2 px-3 py-2 mt-3 mb-1 rounded-md text-xs font-semibold uppercase tracking-wider",
+                                    categoryInfo.bgColor,
+                                    categoryInfo.color
+                                  )}>
+                                    <div className="h-px flex-1 bg-current opacity-30" />
+                                    <span>{categoryInfo.label}</span>
+                                    <div className="h-px flex-1 bg-current opacity-30" />
+                                  </div>
                                 )}
-                              >
-                                <subItem.icon className="h-3 w-3" />
-                                {subItem.name}
-                                <ExternalLink className="h-3 w-3 ml-auto" />
-                              </a>
+                                
+                                {/* Se for link externo, usar <a> ao invés de <NavLink> */}
+                                {(subItem as any).external ? (
+                                  <a
+                                    href={subItem.href}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className={cn(
+                                      "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                                      "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                                    )}
+                                  >
+                                    <subItem.icon className={cn("h-3 w-3", categoryInfo?.color)} />
+                                    {subItem.name}
+                                    <ExternalLink className="h-3 w-3 ml-auto" />
+                                  </a>
+                                ) : (
+                                  <NavLink
+                                    to={subItem.href}
+                                    className={cn(
+                                      "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                                      isSubActive
+                                        ? "bg-primary text-primary-foreground"
+                                        : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                                    )}
+                                  >
+                                    <subItem.icon className={cn("h-3 w-3", !isSubActive && categoryInfo?.color)} />
+                                    {subItem.name}
+                                  </NavLink>
+                                )}
+                              </div>
                             );
-                          }
-                          
-                          return (
-                            <NavLink
-                              key={subItem.name}
-                              to={subItem.href}
-                              className={cn(
-                                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                                isSubActive
-                                  ? "bg-primary text-primary-foreground"
-                                  : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                              )}
-                            >
-                              <subItem.icon className="h-3 w-3" />
-                              {subItem.name}
-                            </NavLink>
-                          );
-                        })}
+                          });
+                        })()}
                       </CollapsibleContent>
                     </Collapsible>
                   </div>
