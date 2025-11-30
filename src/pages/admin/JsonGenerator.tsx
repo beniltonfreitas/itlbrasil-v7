@@ -112,11 +112,16 @@ const JsonGenerator = () => {
         const { data, error: functionError } = result || {};
 
         if (functionError) {
-          console.error('[JsonGenerator] Erro do Supabase (reporter-ai):', functionError);
+          console.error('[JsonGenerator] Erro detalhado:', {
+            name: functionError.name,
+            message: functionError.message,
+            status: functionError.status,
+            details: functionError
+          });
 
           if (functionError.name === 'FunctionsFetchError' ||
               (functionError.message && functionError.message.includes('Failed to send a request'))) {
-            throw new Error('🔌 Não foi possível contatar o servidor (Edge Function). Tente novamente. Se persistir, recarregue a página.');
+            throw new Error('🔌 Não foi possível contatar o servidor. Verifique: 1) Se a função reporter-ai está deployada 2) Se LOVABLE_API_KEY está configurada nos Secrets do Cloud 3) Se há créditos disponíveis no Lovable AI');
           }
 
           if (functionError.message?.includes('402') || functionError.message?.includes('CREDITS_INSUFFICIENT')) {
@@ -125,8 +130,10 @@ const JsonGenerator = () => {
             throw new Error('⏱️ Limite de requisições atingido. Aguarde alguns minutos e tente novamente.');
           } else if (functionError.message?.includes('408') || functionError.message?.includes('Timeout')) {
             throw new Error('⏱️ Timeout: o processamento do item está demorando. Tente novamente.');
+          } else if (functionError.message?.includes('LOVABLE_API_KEY')) {
+            throw new Error('🔑 LOVABLE_API_KEY não está configurada. Acesse Cloud > Secrets e configure a chave.');
           } else {
-            throw new Error(functionError.message || 'Erro ao comunicar com o servidor');
+            throw new Error(`Erro: ${functionError.message || 'Desconhecido'}. Verifique os logs do console para mais detalhes.`);
           }
         }
 
