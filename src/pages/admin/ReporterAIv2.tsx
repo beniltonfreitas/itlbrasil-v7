@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,10 +6,11 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
-import { Sparkles, Link2, Image, AlertCircle, Loader2, CheckCircle, FileText, Copy } from "lucide-react";
+import { Sparkles, Link2, Image, AlertCircle, Loader2, CheckCircle, FileText, Copy, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useJsonHistory } from "@/hooks/useJsonHistory";
 
 interface ProcessedJob {
   id: string;
@@ -26,6 +27,12 @@ const ReporterAIv2 = () => {
   const [imageUrl, setImageUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [jobs, setJobs] = useState<ProcessedJob[]>([]);
+  
+  const { saveToHistory, loadHistory, deleteFromHistory, history } = useJsonHistory();
+
+  useEffect(() => {
+    loadHistory('reporter-ai');
+  }, []);
 
   const handleProcess = async () => {
     if (!newsUrl.trim()) {
@@ -79,6 +86,15 @@ const ReporterAIv2 = () => {
           ? { ...job, status: 'done', result: data.json }
           : job
       ));
+
+      // Save to history
+      await saveToHistory(
+        newsUrl.trim(), 
+        data.json, 
+        'reporter-ai', 
+        imageUrl.trim() || undefined, 
+        'done'
+      );
 
       toast.success("JSON gerado com sucesso!");
       setNewsUrl("");
@@ -242,6 +258,58 @@ const ReporterAIv2 = () => {
                       </AlertDescription>
                     </Alert>
                   )}
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Saved History from Database */}
+      {history.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Histórico Salvo</CardTitle>
+            <CardDescription>
+              JSONs salvos no banco de dados (últimos 20)
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {history.map((item) => (
+                <div key={item.id} className="p-3 border rounded-lg space-y-2">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1 space-y-1">
+                      <p className="text-sm font-medium truncate">{item.news_url}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatDistanceToNow(new Date(item.created_at), { 
+                          addSuffix: true, 
+                          locale: ptBR 
+                        })}
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          const jsonStr = JSON.stringify(item.generated_json, null, 2);
+                          navigator.clipboard.writeText(jsonStr);
+                          toast.success("JSON copiado!");
+                        }}
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => deleteFromHistory(item.id)}
+                        className="text-red-500 hover:text-red-600"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
