@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -35,7 +35,7 @@ import { useCreateArticle, useUpdateArticle } from "@/hooks/useArticleMutations"
 import { useArticleRewrite } from "@/hooks/useArticleRewrite";
 import { ImageGalleryEditor } from "@/components/ImageGalleryEditor";
 import { ImageUpload } from "@/components/ui/image-upload";
-import { ArrowLeft, Save, Eye, Globe, FileText, Settings, Tag, Image, Wand2, RefreshCw, Link as LinkIcon, MessageSquare, AlertCircle, X } from "lucide-react";
+import { ArrowLeft, Save, Eye, Globe, FileText, Settings, Tag, Image, Wand2, RefreshCw, Link as LinkIcon, MessageSquare, AlertCircle, X, Upload, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useSecureAuth } from "@/contexts/SecureAuthContext";
 import { DEFAULT_AUTHOR_ID } from "@/constants/authors";
@@ -58,6 +58,7 @@ import {
   validateTags,
   type ArticleImageObject
 } from "@/lib/newsUtils";
+import { uploadImageToStorage } from "@/lib/imageUpload";
 
 // Image object schema
 const imageObjectSchema = z.object({
@@ -122,6 +123,12 @@ const ArticleEditor = () => {
   const [isPreview, setIsPreview] = useState(false);
   const [tagsInput, setTagsInput] = useState("");
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState<string | null>(null);
+  
+  // File input refs for image uploads
+  const heroInputRef = useRef<HTMLInputElement>(null);
+  const ogInputRef = useRef<HTMLInputElement>(null);
+  const cardInputRef = useRef<HTMLInputElement>(null);
   
   const isEditing = !!id;
   const { data: article, isLoading: loadingArticle } = useArticleById(id || "");
@@ -161,6 +168,54 @@ const ArticleEditor = () => {
         title: "Slug gerado",
         description: `Slug atualizado para: ${newSlug}`,
       });
+    }
+  };
+
+  // Handle image upload for hero/og/card
+  const handleImageUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    field: 'hero' | 'og' | 'card',
+    currentValue: { hero: string; og: string; card: string; alt: string },
+    onChange: (value: { hero: string; og: string; card: string; alt: string }) => void
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingImage(field);
+    try {
+      const result = await uploadImageToStorage(file);
+      
+      if (field === 'hero') {
+        // Auto-replicate to og and card if they're empty
+        onChange({
+          hero: result.url,
+          og: currentValue.og || result.url,
+          card: currentValue.card || result.url,
+          alt: currentValue.alt
+        });
+      } else {
+        onChange({
+          ...currentValue,
+          [field]: result.url
+        });
+      }
+      
+      toast({
+        title: "Imagem enviada",
+        description: `Imagem ${field.toUpperCase()} atualizada com sucesso.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Erro no upload",
+        description: error instanceof Error ? error.message : "Erro desconhecido",
+        variant: "destructive",
+      });
+    } finally {
+      setUploadingImage(null);
+      // Reset file input
+      if (field === 'hero' && heroInputRef.current) heroInputRef.current.value = "";
+      if (field === 'og' && ogInputRef.current) ogInputRef.current.value = "";
+      if (field === 'card' && cardInputRef.current) cardInputRef.current.value = "";
     }
   };
 
@@ -621,23 +676,45 @@ const ArticleEditor = () => {
                             <FormItem>
                               <FormLabel>Hero (1200×675) *</FormLabel>
                               <FormControl>
-                                <Input 
-                                  value={field.value.hero}
-                                  onChange={(e) => {
-                                    const url = e.target.value;
-                                    // Auto-replicate to og and card if they're empty
-                                    const newValue = {
-                                      hero: url,
-                                      og: field.value.og || url,
-                                      card: field.value.card || url,
-                                      alt: field.value.alt
-                                    };
-                                    field.onChange(newValue);
-                                  }}
-                                  placeholder="https://exemplo.com/hero.jpg" 
-                                  type="url"
-                                />
+                                <div className="flex gap-2">
+                                  <Input 
+                                    value={field.value.hero}
+                                    onChange={(e) => {
+                                      const url = e.target.value;
+                                      const newValue = {
+                                        hero: url,
+                                        og: field.value.og || url,
+                                        card: field.value.card || url,
+                                        alt: field.value.alt
+                                      };
+                                      field.onChange(newValue);
+                                    }}
+                                    placeholder="https://exemplo.com/hero.jpg" 
+                                    type="url"
+                                  />
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="icon"
+                                    onClick={() => heroInputRef.current?.click()}
+                                    disabled={uploadingImage === 'hero'}
+                                    title="Fazer upload de imagem"
+                                  >
+                                    {uploadingImage === 'hero' ? (
+                                      <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                      <Upload className="h-4 w-4" />
+                                    )}
+                                  </Button>
+                                </div>
                               </FormControl>
+                              <input
+                                ref={heroInputRef}
+                                type="file"
+                                accept="image/jpeg,image/png,image/webp,image/gif"
+                                className="hidden"
+                                onChange={(e) => handleImageUpload(e, 'hero', field.value, field.onChange)}
+                              />
                               <div className="text-xs text-muted-foreground">
                                 {field.value.hero && isHttpsImageUrl(field.value.hero) 
                                   ? "✅ URL válida" 
@@ -650,13 +727,36 @@ const ArticleEditor = () => {
                             <FormItem>
                               <FormLabel>OG/Social (1200×630)</FormLabel>
                               <FormControl>
-                                <Input 
-                                  value={field.value.og}
-                                  onChange={(e) => field.onChange({ ...field.value, og: e.target.value })}
-                                  placeholder="https://exemplo.com/og.jpg" 
-                                  type="url"
-                                />
+                                <div className="flex gap-2">
+                                  <Input 
+                                    value={field.value.og}
+                                    onChange={(e) => field.onChange({ ...field.value, og: e.target.value })}
+                                    placeholder="https://exemplo.com/og.jpg" 
+                                    type="url"
+                                  />
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="icon"
+                                    onClick={() => ogInputRef.current?.click()}
+                                    disabled={uploadingImage === 'og'}
+                                    title="Fazer upload de imagem"
+                                  >
+                                    {uploadingImage === 'og' ? (
+                                      <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                      <Upload className="h-4 w-4" />
+                                    )}
+                                  </Button>
+                                </div>
                               </FormControl>
+                              <input
+                                ref={ogInputRef}
+                                type="file"
+                                accept="image/jpeg,image/png,image/webp,image/gif"
+                                className="hidden"
+                                onChange={(e) => handleImageUpload(e, 'og', field.value, field.onChange)}
+                              />
                               <div className="text-xs text-muted-foreground">
                                 {field.value.og && isHttpsImageUrl(field.value.og) 
                                   ? "✅ URL válida" 
@@ -667,13 +767,36 @@ const ArticleEditor = () => {
                             <FormItem>
                               <FormLabel>Card (800×450)</FormLabel>
                               <FormControl>
-                                <Input 
-                                  value={field.value.card}
-                                  onChange={(e) => field.onChange({ ...field.value, card: e.target.value })}
-                                  placeholder="https://exemplo.com/card.jpg" 
-                                  type="url"
-                                />
+                                <div className="flex gap-2">
+                                  <Input 
+                                    value={field.value.card}
+                                    onChange={(e) => field.onChange({ ...field.value, card: e.target.value })}
+                                    placeholder="https://exemplo.com/card.jpg" 
+                                    type="url"
+                                  />
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="icon"
+                                    onClick={() => cardInputRef.current?.click()}
+                                    disabled={uploadingImage === 'card'}
+                                    title="Fazer upload de imagem"
+                                  >
+                                    {uploadingImage === 'card' ? (
+                                      <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                      <Upload className="h-4 w-4" />
+                                    )}
+                                  </Button>
+                                </div>
                               </FormControl>
+                              <input
+                                ref={cardInputRef}
+                                type="file"
+                                accept="image/jpeg,image/png,image/webp,image/gif"
+                                className="hidden"
+                                onChange={(e) => handleImageUpload(e, 'card', field.value, field.onChange)}
+                              />
                               <div className="text-xs text-muted-foreground">
                                 {field.value.card && isHttpsImageUrl(field.value.card) 
                                   ? "✅ URL válida" 

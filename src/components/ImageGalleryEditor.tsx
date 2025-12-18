@@ -1,12 +1,14 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, X, MoveUp, MoveDown, Image as ImageIcon } from "lucide-react";
+import { Plus, X, MoveUp, MoveDown, Image as ImageIcon, Upload, Loader2 } from "lucide-react";
 import { ImageData } from "@/hooks/useArticles";
+import { uploadImageToStorage } from "@/lib/imageUpload";
+import { useToast } from "@/hooks/use-toast";
 
 interface ImageGalleryEditorProps {
   images: ImageData[];
@@ -18,6 +20,9 @@ export const ImageGalleryEditor: React.FC<ImageGalleryEditorProps> = ({
   onChange,
 }) => {
   const [newImageUrl, setNewImageUrl] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
 
   const generateId = () => `img_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
@@ -41,6 +46,41 @@ export const ImageGalleryEditor: React.FC<ImageGalleryEditorProps> = ({
       .filter((img) => img.id !== imageId)
       .map((img, index) => ({ ...img, position: index }));
     onChange(updatedImages);
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    try {
+      const result = await uploadImageToStorage(file);
+      
+      const newImage: ImageData = {
+        id: generateId(),
+        url: result.url,
+        caption: "",
+        credit: "",
+        position: images.length,
+      };
+
+      onChange([...images, newImage]);
+      toast({
+        title: "Imagem enviada",
+        description: "A imagem foi adicionada à galeria.",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro no upload",
+        description: error instanceof Error ? error.message : "Erro desconhecido",
+        variant: "destructive",
+      });
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
   };
 
   const updateImage = (imageId: string, field: keyof ImageData, value: string | number) => {
@@ -91,10 +131,30 @@ export const ImageGalleryEditor: React.FC<ImageGalleryEditorProps> = ({
             onChange={(e) => setNewImageUrl(e.target.value)}
             onKeyPress={(e) => e.key === "Enter" && addImage()}
           />
+          <Button 
+            type="button"
+            variant="outline"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+            title="Fazer upload de imagem"
+          >
+            {uploading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Upload className="h-4 w-4" />
+            )}
+          </Button>
           <Button onClick={addImage} disabled={!newImageUrl.trim()}>
             <Plus className="h-4 w-4" />
           </Button>
         </div>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/gif"
+          className="hidden"
+          onChange={handleFileUpload}
+        />
 
         {/* Images list */}
         {images.length === 0 ? (
