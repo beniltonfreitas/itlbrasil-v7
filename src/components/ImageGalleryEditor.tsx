@@ -9,6 +9,7 @@ import { Plus, X, MoveUp, MoveDown, Image as ImageIcon, Upload, Loader2 } from "
 import { ImageData } from "@/hooks/useArticles";
 import { uploadImageToStorage } from "@/lib/imageUpload";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 interface ImageGalleryEditorProps {
   images: ImageData[];
@@ -21,6 +22,7 @@ export const ImageGalleryEditor: React.FC<ImageGalleryEditorProps> = ({
 }) => {
   const [newImageUrl, setNewImageUrl] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -48,11 +50,7 @@ export const ImageGalleryEditor: React.FC<ImageGalleryEditorProps> = ({
     onChange(updatedImages);
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setUploading(true);
+  const handleSingleFileUpload = async (file: File) => {
     try {
       const result = await uploadImageToStorage(file);
       
@@ -65,22 +63,79 @@ export const ImageGalleryEditor: React.FC<ImageGalleryEditorProps> = ({
       };
 
       onChange([...images, newImage]);
-      toast({
-        title: "Imagem enviada",
-        description: "A imagem foi adicionada à galeria.",
-      });
+      return true;
     } catch (error) {
       toast({
         title: "Erro no upload",
         description: error instanceof Error ? error.message : "Erro desconhecido",
         variant: "destructive",
       });
-    } finally {
-      setUploading(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
+      return false;
     }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setUploading(true);
+    let successCount = 0;
+    
+    for (const file of Array.from(files)) {
+      const success = await handleSingleFileUpload(file);
+      if (success) successCount++;
+    }
+
+    if (successCount > 0) {
+      toast({
+        title: "Imagens enviadas",
+        description: `${successCount} imagem(ns) adicionada(s) à galeria.`,
+      });
+    }
+
+    setUploading(false);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  // Drag & Drop handlers
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === 'dragenter' || e.type === 'dragover') {
+      setDragActive(true);
+    } else if (e.type === 'dragleave') {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    
+    const files = e.dataTransfer.files;
+    if (!files || files.length === 0) return;
+
+    setUploading(true);
+    let successCount = 0;
+    
+    for (const file of Array.from(files)) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) continue;
+      const success = await handleSingleFileUpload(file);
+      if (success) successCount++;
+    }
+
+    if (successCount > 0) {
+      toast({
+        title: "Imagens enviadas",
+        description: `${successCount} imagem(ns) adicionada(s) à galeria.`,
+      });
+    }
+
+    setUploading(false);
   };
 
   const updateImage = (imageId: string, field: keyof ImageData, value: string | number) => {
@@ -123,45 +178,70 @@ export const ImageGalleryEditor: React.FC<ImageGalleryEditorProps> = ({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Add new image */}
+        {/* Drag & Drop Zone */}
+        <div
+          className={cn(
+            "border-2 border-dashed rounded-lg p-6 text-center transition-all cursor-pointer",
+            dragActive 
+              ? "border-primary bg-primary/5 scale-[1.02]" 
+              : "border-muted-foreground/20 hover:border-primary/50",
+            uploading && "opacity-50 pointer-events-none"
+          )}
+          onDragEnter={handleDrag}
+          onDragLeave={handleDrag}
+          onDragOver={handleDrag}
+          onDrop={handleDrop}
+          onClick={() => !uploading && fileInputRef.current?.click()}
+        >
+          {uploading ? (
+            <Loader2 className="h-8 w-8 mx-auto mb-2 text-primary animate-spin" />
+          ) : (
+            <Upload className={cn(
+              "h-8 w-8 mx-auto mb-2 transition-colors",
+              dragActive ? "text-primary" : "text-muted-foreground"
+            )} />
+          )}
+          <p className={cn(
+            "text-sm font-medium transition-colors",
+            dragActive ? "text-primary" : "text-muted-foreground"
+          )}>
+            {uploading 
+              ? "Enviando imagens..." 
+              : dragActive 
+                ? "Solte as imagens aqui!" 
+                : "Arraste imagens aqui ou clique para selecionar"}
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Suporta JPG, PNG, WEBP, GIF (máx. 10MB cada) • Compressão automática
+          </p>
+        </div>
+
+        {/* URL Input */}
         <div className="flex gap-2">
           <Input
-            placeholder="URL da imagem..."
+            placeholder="Ou cole uma URL de imagem..."
             value={newImageUrl}
             onChange={(e) => setNewImageUrl(e.target.value)}
             onKeyPress={(e) => e.key === "Enter" && addImage()}
           />
-          <Button 
-            type="button"
-            variant="outline"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploading}
-            title="Fazer upload de imagem"
-          >
-            {uploading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Upload className="h-4 w-4" />
-            )}
-          </Button>
           <Button onClick={addImage} disabled={!newImageUrl.trim()}>
             <Plus className="h-4 w-4" />
           </Button>
         </div>
+
         <input
           ref={fileInputRef}
           type="file"
           accept="image/jpeg,image/png,image/webp,image/gif"
+          multiple
           className="hidden"
           onChange={handleFileUpload}
         />
 
         {/* Images list */}
         {images.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            <ImageIcon className="h-12 w-12 mx-auto mb-2 opacity-50" />
-            <p>Nenhuma imagem adicionada</p>
-            <p className="text-sm">Adicione URLs de imagens para criar uma galeria</p>
+          <div className="text-center py-4 text-muted-foreground">
+            <p className="text-sm">Nenhuma imagem na galeria</p>
           </div>
         ) : (
           <div className="space-y-4">
