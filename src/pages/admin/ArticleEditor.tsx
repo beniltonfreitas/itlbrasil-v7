@@ -59,6 +59,7 @@ import {
   type ArticleImageObject
 } from "@/lib/newsUtils";
 import { uploadImageToStorage } from "@/lib/imageUpload";
+import { cn } from "@/lib/utils";
 
 // Image object schema
 const imageObjectSchema = z.object({
@@ -124,6 +125,7 @@ const ArticleEditor = () => {
   const [tagsInput, setTagsInput] = useState("");
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState<string | null>(null);
+  const [dragActive, setDragActive] = useState<string | null>(null);
   
   // File input refs for image uploads
   const heroInputRef = useRef<HTMLInputElement>(null);
@@ -168,6 +170,63 @@ const ArticleEditor = () => {
         title: "Slug gerado",
         description: `Slug atualizado para: ${newSlug}`,
       });
+    }
+  };
+
+  // Drag & Drop handlers for image fields
+  const handleDrag = (e: React.DragEvent, fieldName: string | null) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === 'dragenter' || e.type === 'dragover') {
+      setDragActive(fieldName);
+    } else if (e.type === 'dragleave') {
+      setDragActive(null);
+    }
+  };
+
+  const handleDrop = async (
+    e: React.DragEvent,
+    field: 'hero' | 'og' | 'card',
+    currentValue: { hero: string; og: string; card: string; alt: string },
+    onChange: (value: { hero: string; og: string; card: string; alt: string }) => void
+  ) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(null);
+    
+    const file = e.dataTransfer.files?.[0];
+    if (!file || !file.type.startsWith('image/')) return;
+
+    setUploadingImage(field);
+    try {
+      const result = await uploadImageToStorage(file);
+      
+      if (field === 'hero') {
+        onChange({
+          hero: result.url,
+          og: currentValue.og || result.url,
+          card: currentValue.card || result.url,
+          alt: currentValue.alt
+        });
+      } else {
+        onChange({
+          ...currentValue,
+          [field]: result.url
+        });
+      }
+      
+      toast({
+        title: "Imagem enviada",
+        description: `Imagem ${field.toUpperCase()} atualizada com sucesso.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Erro no upload",
+        description: error instanceof Error ? error.message : "Erro desconhecido",
+        variant: "destructive",
+      });
+    } finally {
+      setUploadingImage(null);
     }
   };
 
@@ -665,7 +724,7 @@ const ArticleEditor = () => {
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div className="text-sm text-muted-foreground mb-4">
-                        💡 <strong>Modo rápido:</strong> Cole uma URL no Hero e ela será replicada para OG e Card automaticamente.
+                        💡 <strong>Dica:</strong> Arraste uma imagem para qualquer campo ou cole uma URL. Hero replica para OG e Card automaticamente.
                       </div>
                       
                       <FormField
@@ -673,39 +732,58 @@ const ArticleEditor = () => {
                         name="imagem"
                         render={({ field }) => (
                           <>
+                            {/* Hero Image */}
                             <FormItem>
                               <FormLabel>Hero (1200×675) *</FormLabel>
                               <FormControl>
-                                <div className="flex gap-2">
-                                  <Input 
-                                    value={field.value.hero}
-                                    onChange={(e) => {
-                                      const url = e.target.value;
-                                      const newValue = {
-                                        hero: url,
-                                        og: field.value.og || url,
-                                        card: field.value.card || url,
-                                        alt: field.value.alt
-                                      };
-                                      field.onChange(newValue);
-                                    }}
-                                    placeholder="https://exemplo.com/hero.jpg" 
-                                    type="url"
-                                  />
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="icon"
-                                    onClick={() => heroInputRef.current?.click()}
-                                    disabled={uploadingImage === 'hero'}
-                                    title="Fazer upload de imagem"
-                                  >
-                                    {uploadingImage === 'hero' ? (
-                                      <Loader2 className="h-4 w-4 animate-spin" />
-                                    ) : (
-                                      <Upload className="h-4 w-4" />
-                                    )}
-                                  </Button>
+                                <div 
+                                  className={cn(
+                                    "border-2 border-dashed rounded-lg p-3 transition-all",
+                                    dragActive === 'hero' 
+                                      ? "border-primary bg-primary/5 scale-[1.01]" 
+                                      : "border-transparent hover:border-muted-foreground/30"
+                                  )}
+                                  onDragEnter={(e) => handleDrag(e, 'hero')}
+                                  onDragLeave={(e) => handleDrag(e, null)}
+                                  onDragOver={(e) => handleDrag(e, 'hero')}
+                                  onDrop={(e) => handleDrop(e, 'hero', field.value, field.onChange)}
+                                >
+                                  <div className="flex gap-2">
+                                    <Input 
+                                      value={field.value.hero}
+                                      onChange={(e) => {
+                                        const url = e.target.value;
+                                        const newValue = {
+                                          hero: url,
+                                          og: field.value.og || url,
+                                          card: field.value.card || url,
+                                          alt: field.value.alt
+                                        };
+                                        field.onChange(newValue);
+                                      }}
+                                      placeholder={dragActive === 'hero' ? "Solte a imagem aqui!" : "URL ou arraste uma imagem"} 
+                                      type="url"
+                                    />
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="icon"
+                                      onClick={() => heroInputRef.current?.click()}
+                                      disabled={uploadingImage === 'hero'}
+                                      title="Fazer upload de imagem"
+                                    >
+                                      {uploadingImage === 'hero' ? (
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                      ) : (
+                                        <Upload className="h-4 w-4" />
+                                      )}
+                                    </Button>
+                                  </div>
+                                  {dragActive === 'hero' && (
+                                    <p className="text-xs text-primary text-center mt-2 font-medium">
+                                      Solte para fazer upload!
+                                    </p>
+                                  )}
                                 </div>
                               </FormControl>
                               <input
@@ -717,37 +795,56 @@ const ArticleEditor = () => {
                               />
                               <div className="text-xs text-muted-foreground">
                                 {field.value.hero && isHttpsImageUrl(field.value.hero) 
-                                  ? "✅ URL válida" 
+                                  ? "✅ URL válida • Compressão automática" 
                                   : field.value.hero 
                                     ? "⚠️ Use HTTPS e formato válido" 
-                                    : "Imagem principal (hero)"}
+                                    : "Imagem principal (hero) • Arraste ou clique no botão"}
                               </div>
                             </FormItem>
 
+                            {/* OG Image */}
                             <FormItem>
                               <FormLabel>OG/Social (1200×630)</FormLabel>
                               <FormControl>
-                                <div className="flex gap-2">
-                                  <Input 
-                                    value={field.value.og}
-                                    onChange={(e) => field.onChange({ ...field.value, og: e.target.value })}
-                                    placeholder="https://exemplo.com/og.jpg" 
-                                    type="url"
-                                  />
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="icon"
-                                    onClick={() => ogInputRef.current?.click()}
-                                    disabled={uploadingImage === 'og'}
-                                    title="Fazer upload de imagem"
-                                  >
-                                    {uploadingImage === 'og' ? (
-                                      <Loader2 className="h-4 w-4 animate-spin" />
-                                    ) : (
-                                      <Upload className="h-4 w-4" />
-                                    )}
-                                  </Button>
+                                <div 
+                                  className={cn(
+                                    "border-2 border-dashed rounded-lg p-3 transition-all",
+                                    dragActive === 'og' 
+                                      ? "border-primary bg-primary/5 scale-[1.01]" 
+                                      : "border-transparent hover:border-muted-foreground/30"
+                                  )}
+                                  onDragEnter={(e) => handleDrag(e, 'og')}
+                                  onDragLeave={(e) => handleDrag(e, null)}
+                                  onDragOver={(e) => handleDrag(e, 'og')}
+                                  onDrop={(e) => handleDrop(e, 'og', field.value, field.onChange)}
+                                >
+                                  <div className="flex gap-2">
+                                    <Input 
+                                      value={field.value.og}
+                                      onChange={(e) => field.onChange({ ...field.value, og: e.target.value })}
+                                      placeholder={dragActive === 'og' ? "Solte a imagem aqui!" : "URL ou arraste uma imagem"} 
+                                      type="url"
+                                    />
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="icon"
+                                      onClick={() => ogInputRef.current?.click()}
+                                      disabled={uploadingImage === 'og'}
+                                      title="Fazer upload de imagem"
+                                    >
+                                      {uploadingImage === 'og' ? (
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                      ) : (
+                                        <Upload className="h-4 w-4" />
+                                      )}
+                                    </Button>
+                                  </div>
+                                  {dragActive === 'og' && (
+                                    <p className="text-xs text-primary text-center mt-2 font-medium">
+                                      Solte para fazer upload!
+                                    </p>
+                                  )}
                                 </div>
                               </FormControl>
                               <input
@@ -764,30 +861,49 @@ const ArticleEditor = () => {
                               </div>
                             </FormItem>
 
+                            {/* Card Image */}
                             <FormItem>
                               <FormLabel>Card (800×450)</FormLabel>
                               <FormControl>
-                                <div className="flex gap-2">
-                                  <Input 
-                                    value={field.value.card}
-                                    onChange={(e) => field.onChange({ ...field.value, card: e.target.value })}
-                                    placeholder="https://exemplo.com/card.jpg" 
-                                    type="url"
-                                  />
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="icon"
-                                    onClick={() => cardInputRef.current?.click()}
-                                    disabled={uploadingImage === 'card'}
-                                    title="Fazer upload de imagem"
-                                  >
-                                    {uploadingImage === 'card' ? (
-                                      <Loader2 className="h-4 w-4 animate-spin" />
-                                    ) : (
-                                      <Upload className="h-4 w-4" />
-                                    )}
-                                  </Button>
+                                <div 
+                                  className={cn(
+                                    "border-2 border-dashed rounded-lg p-3 transition-all",
+                                    dragActive === 'card' 
+                                      ? "border-primary bg-primary/5 scale-[1.01]" 
+                                      : "border-transparent hover:border-muted-foreground/30"
+                                  )}
+                                  onDragEnter={(e) => handleDrag(e, 'card')}
+                                  onDragLeave={(e) => handleDrag(e, null)}
+                                  onDragOver={(e) => handleDrag(e, 'card')}
+                                  onDrop={(e) => handleDrop(e, 'card', field.value, field.onChange)}
+                                >
+                                  <div className="flex gap-2">
+                                    <Input 
+                                      value={field.value.card}
+                                      onChange={(e) => field.onChange({ ...field.value, card: e.target.value })}
+                                      placeholder={dragActive === 'card' ? "Solte a imagem aqui!" : "URL ou arraste uma imagem"} 
+                                      type="url"
+                                    />
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="icon"
+                                      onClick={() => cardInputRef.current?.click()}
+                                      disabled={uploadingImage === 'card'}
+                                      title="Fazer upload de imagem"
+                                    >
+                                      {uploadingImage === 'card' ? (
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                      ) : (
+                                        <Upload className="h-4 w-4" />
+                                      )}
+                                    </Button>
+                                  </div>
+                                  {dragActive === 'card' && (
+                                    <p className="text-xs text-primary text-center mt-2 font-medium">
+                                      Solte para fazer upload!
+                                    </p>
+                                  )}
                                 </div>
                               </FormControl>
                               <input
