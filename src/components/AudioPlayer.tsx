@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Play, Pause, Square, Volume2, VolumeX } from 'lucide-react';
+import { Play, Pause, Volume2, VolumeX } from 'lucide-react';
 import { useTextToSpeech } from '@/hooks/useTextToSpeech';
 import { stripHtml } from '@/lib/textUtils';
 
@@ -48,67 +47,48 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
     }
   };
 
-  const handleStop = () => {
-    stop();
-  };
-
   if (!isSupported) {
     return (
-      <Card className={`p-4 bg-muted/50 ${className}`}>
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <VolumeX className="w-5 h-5" />
-          <span className="text-sm">
-            Seu navegador não suporta a leitura em áudio
-          </span>
-        </div>
-      </Card>
+      <div className={`flex items-center gap-2 text-muted-foreground text-sm ${className}`}>
+        <VolumeX className="w-4 h-4" />
+        <span>Seu navegador não suporta leitura em áudio</span>
+      </div>
     );
   }
 
   return (
-    <Card className={`p-4 bg-card border ${className}`}>
-      <div className="flex items-center gap-3">
-        <Volume2 className="w-5 h-5 text-primary" />
-        <div className="flex-1">
-          <h3 className="text-sm font-semibold mb-1">Versão em áudio</h3>
-          <p className="text-xs text-muted-foreground">
-            {status === 'playing' && 'Reproduzindo...'}
-            {status === 'paused' && 'Pausado'}
-            {(status === 'idle' || status === 'ended') && 'Ouça esta notícia'}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            onClick={handlePlayPause}
-            size="sm"
-            variant="default"
-            className="gap-2"
-            aria-label={status === 'playing' ? 'Pausar' : 'Reproduzir'}
-          >
-            {status === 'playing' ? (
-              <>
-                <Pause className="w-4 h-4" />
-                Pausar
-              </>
-            ) : (
-              <>
-                <Play className="w-4 h-4" />
-                {status === 'paused' ? 'Continuar' : 'Ouvir'}
-              </>
-            )}
-          </Button>
-          {(status === 'playing' || status === 'paused') && (
-            <Button
-              onClick={handleStop}
-              size="sm"
-              variant="outline"
-              aria-label="Parar"
-            >
-              <Square className="w-4 h-4" />
-            </Button>
-          )}
-        </div>
-      </div>
-    </Card>
+    <div className={`flex items-center gap-3 py-3 border-y border-border ${className}`}>
+      <Volume2 className="w-4 h-4 text-primary flex-shrink-0" />
+      <span className="text-sm text-foreground font-medium">Versão em áudio</span>
+      <Button
+        onClick={handlePlayPause}
+        size="sm"
+        variant="ghost"
+        className="h-7 px-3 text-xs gap-1.5 text-primary hover:text-primary hover:bg-primary/10"
+        aria-label={status === 'playing' ? 'Pausar' : 'Reproduzir'}
+      >
+        {status === 'playing' ? (
+          <>
+            <Pause className="w-3.5 h-3.5" />
+            Pausar
+          </>
+        ) : (
+          <>
+            <Play className="w-3.5 h-3.5" />
+            {status === 'paused' ? 'Continuar' : 'Ouvir'}
+          </>
+        )}
+      </Button>
+      {status === 'playing' && (
+        <span className="text-xs text-muted-foreground animate-pulse">
+          Reproduzindo...
+        </span>
+      )}
+      {status === 'paused' && (
+        <span className="text-xs text-muted-foreground">
+          Pausado
+        </span>
+      )}
+    </div>
   );
 };

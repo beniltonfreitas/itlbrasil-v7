@@ -26,29 +26,55 @@ export const SafeHTML: React.FC<SafeHTMLProps> = ({
     ],
     ALLOWED_ATTR: allowedAttributes || [
       'href', 'target', 'rel', 'src', 'alt', 'title', 'class',
-      'width', 'height', 'style', 'id', 'align', 'colspan', 'rowspan'
+      'width', 'height', 'id', 'align', 'colspan', 'rowspan'
     ],
     ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|sms|cid|xmpp):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
     ADD_ATTR: ['target', 'rel'],
-    FORBID_TAGS: ['script', 'object', 'embed', 'form', 'input', 'button'],
-    FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover'],
+    FORBID_TAGS: ['script', 'object', 'embed', 'form', 'input', 'button', 'style'],
+    FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover', 'style'],
     KEEP_CONTENT: true,
     RETURN_DOM_FRAGMENT: false,
     RETURN_DOM: false,
     SANITIZE_DOM: true
   };
 
-  // Clean multiple <br> tags and <br> around block elements
-  const cleanHTML = (html: string): string => {
-    return html
-      // Remove múltiplos <br> consecutivos (mantém apenas 1)
-      .replace(/(<br\s*\/?>[\s\n]*){2,}/gi, '<br>')
-      // Remove <br> antes de tags de fechamento de bloco
-      .replace(/<br\s*\/?>\s*<\/(p|h1|h2|h3|h4|h5|h6|div|blockquote)>/gi, '</$1>')
-      // Remove <br> depois de tags de abertura de bloco
-      .replace(/<(p|h1|h2|h3|h4|h5|h6|div|blockquote)([^>]*)>\s*<br\s*\/?>/gi, '<$1$2>')
-      // Remove <br> entre tags de bloco
-      .replace(/<\/(p|h1|h2|h3|h4|h5|h6|div|blockquote)>\s*<br\s*\/?>\s*<(p|h1|h2|h3|h4|h5|h6|div|blockquote)/gi, '</$1><$2>');
+  // Normalize content: convert plain text to paragraphs, clean up HTML
+  const normalizeContent = (content: string): string => {
+    // Remove inline styles
+    let normalized = content.replace(/\s*style\s*=\s*["'][^"']*["']/gi, '');
+    
+    // Clean multiple <br> tags (keep max 1)
+    normalized = normalized.replace(/(<br\s*\/?>[\s\n]*){2,}/gi, '</p><p>');
+    
+    // Remove <br> before block element close tags
+    normalized = normalized.replace(/<br\s*\/?>\s*<\/(p|h1|h2|h3|h4|h5|h6|div|blockquote)>/gi, '</$1>');
+    
+    // Remove <br> after block element open tags
+    normalized = normalized.replace(/<(p|h1|h2|h3|h4|h5|h6|div|blockquote)([^>]*)>\s*<br\s*\/?>/gi, '<$1$2>');
+    
+    // Remove <br> between block elements
+    normalized = normalized.replace(/<\/(p|h1|h2|h3|h4|h5|h6|div|blockquote)>\s*<br\s*\/?>\s*<(p|h1|h2|h3|h4|h5|h6|div|blockquote)/gi, '</$1><$2');
+    
+    // If content has no block elements, wrap in paragraphs
+    const hasBlockElements = /<(p|h1|h2|h3|h4|h5|h6|div|blockquote|ul|ol|figure|table)/i.test(normalized);
+    
+    if (!hasBlockElements && normalized.trim()) {
+      // Split by double newlines and wrap each in <p>
+      const paragraphs = normalized
+        .split(/\n\s*\n/)
+        .map(p => p.trim())
+        .filter(p => p.length > 0)
+        .map(p => `<p>${p.replace(/\n/g, ' ')}</p>`)
+        .join('');
+      
+      normalized = paragraphs || `<p>${normalized}</p>`;
+    }
+    
+    // Clean up empty paragraphs
+    normalized = normalized.replace(/<p>\s*<\/p>/gi, '');
+    normalized = normalized.replace(/<p>\s*<br\s*\/?>\s*<\/p>/gi, '');
+    
+    return normalized;
   };
 
   // Add security attributes to external links
@@ -59,7 +85,8 @@ export const SafeHTML: React.FC<SafeHTMLProps> = ({
     );
   };
 
-  const sanitizedHTML = processLinks(DOMPurify.sanitize(cleanHTML(html), config) as string);
+  const normalizedHTML = normalizeContent(html);
+  const sanitizedHTML = processLinks(DOMPurify.sanitize(normalizedHTML, config) as string);
 
   return (
     <Tag 

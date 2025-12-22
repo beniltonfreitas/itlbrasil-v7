@@ -24,7 +24,7 @@ const ArticleComplete = () => {
   const { slug } = useParams<{ slug: string }>();
   
   const { data: article, isLoading, error } = useArticle(slug || "");
-  const { data: relatedArticles } = useArticles({ limit: 3 });
+  const { data: relatedArticles } = useArticles({ limit: 4 });
   
   // Process article content for splitting with WhatsApp CTAs
   const { parts: contentParts } = useArticleContentProcessor(article?.content || '');
@@ -63,7 +63,7 @@ const ArticleComplete = () => {
   const shareUrl = `${window.location.origin}/artigo/${article.slug}`;
   const shareTitle = article.title;
   const categoryName = article.category?.name || 'Sem categoria';
-  const authorName = article.author?.name || 'Autor desconhecido';
+  const authorName = article.author?.name || 'Redação';
   
   const handleShare = (platform: string) => {
     const urls = {
@@ -88,247 +88,270 @@ const ArticleComplete = () => {
         author={authorName}
         section={categoryName}
       />
-      <main>
+      <main className="bg-background min-h-screen">
         <article className="container mx-auto px-4 py-8">
-          <div className="max-w-4xl mx-auto">
-            {/* Breadcrumb */}
-            <nav className="mb-6">
+          <div className="max-w-3xl mx-auto">
+            
+            {/* 1. Breadcrumb (categoria/editoria) */}
+            <nav className="mb-4">
               <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                 <Link to="/" className="hover:text-primary transition-colors">Início</Link>
-                <span>/</span>
+                <span className="text-muted-foreground/60">/</span>
                 {article.category && (
                   <>
-                    <Link to={`/${article.category.slug}`} className="hover:text-primary transition-colors">
+                    <Link 
+                      to={`/${article.category.slug}`} 
+                      className="hover:text-primary transition-colors font-medium uppercase text-xs tracking-wide"
+                      style={{ color: article.category.color || undefined }}
+                    >
                       {article.category.name}
                     </Link>
-                    <span>/</span>
                   </>
                 )}
-                <span className="text-foreground">{article.title}</span>
               </div>
             </nav>
 
-            {/* Article Header */}
-            <header className="mb-8">
-              {article.category && (
-                <Badge 
-                  variant="secondary" 
-                  className="mb-4"
-                  style={{ backgroundColor: article.category.color + '20', color: article.category.color }}
-                >
-                  {article.category.name}
-                </Badge>
-              )}
-              
-              <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4 leading-tight">
+            {/* 2. Título principal (H1) */}
+            <header className="mb-6">
+              <h1 className="text-3xl md:text-4xl font-bold text-foreground leading-tight mb-4">
                 {article.title}
               </h1>
               
-              {article.excerpt && (
-                <p className="text-xl text-muted-foreground mb-6 leading-relaxed">
-                  {article.excerpt}
-                </p>
-              )}
-              
-              {/* Article Meta */}
-              <div className="flex flex-wrap items-center gap-4 mb-6">
-                <div className="flex items-center space-x-3">
-                  {article.author && (
-                    <>
-                      <Avatar className="h-10 w-10">
-                        <AvatarImage src={article.author.avatar_url || ""} alt={article.author.name} />
-                        <AvatarFallback>
-                          <User className="h-4 w-4" />
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="font-medium text-foreground">{article.author.name}</p>
-                        <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                          <span>{format(new Date(article.published_at!), "d 'de' MMMM 'de' yyyy", { locale: ptBR })}</span>
-                          {article.read_time && (
-                            <>
-                              <span>•</span>
-                              <div className="flex items-center space-x-1">
-                                <Clock className="h-3 w-3" />
-                                <span>{article.read_time} min</span>
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </div>
+              {/* 3. Metadados (data, autor/editoria, compartilhamento) */}
+              <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground mb-4">
+                <time dateTime={article.published_at || article.created_at}>
+                  {format(new Date(article.published_at || article.created_at), "d 'de' MMMM 'de' yyyy, HH:mm", { locale: ptBR })}
+                </time>
+                <span className="text-muted-foreground/40">|</span>
+                <span className="font-medium text-foreground/80">
+                  Por {authorName}
+                </span>
+                {article.read_time && (
+                  <>
+                    <span className="text-muted-foreground/40">|</span>
+                    <div className="flex items-center gap-1">
+                      <Clock className="h-3.5 w-3.5" />
+                      <span>{article.read_time} min de leitura</span>
+                    </div>
+                  </>
+                )}
               </div>
 
-              {/* Social Sharing */}
-              <div className="flex items-center space-x-2 mb-8">
-                <span className="text-sm text-muted-foreground">Compartilhar:</span>
-                <Button variant="outline" size="sm" onClick={() => handleShare('facebook')}>
-                  <Facebook className="h-4 w-4 mr-2" />
-                  Facebook
+              {/* Ícones de compartilhamento */}
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground mr-1">Compartilhar:</span>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8 text-muted-foreground hover:text-[#1877F2] hover:bg-[#1877F2]/10"
+                  onClick={() => handleShare('facebook')}
+                  aria-label="Compartilhar no Facebook"
+                >
+                  <Facebook className="h-4 w-4" />
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => handleShare('twitter')}>
-                  <Twitter className="h-4 w-4 mr-2" />
-                  Twitter
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8 text-muted-foreground hover:text-[#1DA1F2] hover:bg-[#1DA1F2]/10"
+                  onClick={() => handleShare('twitter')}
+                  aria-label="Compartilhar no Twitter"
+                >
+                  <Twitter className="h-4 w-4" />
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => handleShare('linkedin')}>
-                  <Linkedin className="h-4 w-4 mr-2" />
-                  LinkedIn
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8 text-muted-foreground hover:text-[#0A66C2] hover:bg-[#0A66C2]/10"
+                  onClick={() => handleShare('linkedin')}
+                  aria-label="Compartilhar no LinkedIn"
+                >
+                  <Linkedin className="h-4 w-4" />
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => handleShare('whatsapp')}>
-                  <Share2 className="h-4 w-4 mr-2" />
-                  WhatsApp
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8 text-muted-foreground hover:text-[#25D366] hover:bg-[#25D366]/10"
+                  onClick={() => handleShare('whatsapp')}
+                  aria-label="Compartilhar no WhatsApp"
+                >
+                  <Share2 className="h-4 w-4" />
                 </Button>
               </div>
             </header>
 
-            <div className="grid lg:grid-cols-3 gap-8">
-              {/* Main Content */}
-              <div className="lg:col-span-2">
-                {/* Featured Image */}
-                {article.featured_image && (
-                  <div className="mb-6">
-                    <img
-                      src={article.featured_image}
-                      alt={article.title}
-                      className="w-full h-64 md:h-96 object-cover rounded-lg shadow-lg"
-                    />
-                    {(article as any).image_credit && (
-                      <p className="text-sm text-muted-foreground mt-2 text-right">
-                        Foto: {(article as any).image_credit}
-                      </p>
-                    )}
-                  </div>
-                )}
-
-                {/* Audio Player - Abaixo da imagem */}
-                <AudioPlayer
-                  title={article.title}
-                  content={article.content}
-                  excerpt={article.excerpt}
-                  className="mb-8"
+            {/* 4. Imagem principal (Hero) + Legenda */}
+            {article.featured_image && (
+              <figure className="mb-6">
+                <img
+                  src={article.featured_image}
+                  alt={(article as any).featured_image_alt || article.title}
+                  className="w-full h-auto object-cover"
                 />
+                {((article as any).featured_image_credit || (article as any).image_credit) && (
+                  <figcaption className="text-sm text-muted-foreground mt-2 text-left">
+                    Foto: {(article as any).featured_image_credit || (article as any).image_credit}
+                  </figcaption>
+                )}
+              </figure>
+            )}
 
-                {/* Article Content with WhatsApp CTAs */}
-                <div className="prose prose-lg max-w-none text-foreground [&>h2]:text-2xl [&>h2]:font-bold [&>h2]:mt-8 [&>h2]:mb-4 [&>h3]:text-xl [&>h3]:font-semibold [&>h3]:mt-6 [&>h3]:mb-3 [&>p]:mb-3 [&>p]:leading-relaxed [&>br]:hidden [&>blockquote]:border-l-4 [&>blockquote]:border-primary [&>blockquote]:pl-4 [&>blockquote]:italic [&>blockquote]:my-6">
-                  {contentParts.map((part, index) => (
-                    <div key={index}>
-                      <SafeHTML html={part} />
-                      {index < contentParts.length - 1 && <WhatsAppCTA />}
-                    </div>
+            {/* 5. Player de áudio (estilo Agência Brasil) */}
+            <AudioPlayer
+              title={article.title}
+              content={article.content}
+              excerpt={article.excerpt}
+              className="mb-8"
+            />
+
+            {/* 6. Corpo do texto (conteúdo editorial) */}
+            <div className="article-content prose prose-lg max-w-none text-foreground
+              [&>h2]:text-xl [&>h2]:font-bold [&>h2]:mt-8 [&>h2]:mb-4 [&>h2]:text-foreground
+              [&>h3]:text-lg [&>h3]:font-semibold [&>h3]:mt-6 [&>h3]:mb-3
+              [&>p]:mb-4 [&>p]:leading-relaxed [&>p]:text-base [&>p]:text-foreground/90
+              [&>ul]:mb-4 [&>ul]:pl-6 [&>ul]:list-disc
+              [&>ol]:mb-4 [&>ol]:pl-6 [&>ol]:list-decimal
+              [&>li]:mb-2
+              [&>blockquote]:border-l-4 [&>blockquote]:border-primary [&>blockquote]:pl-4 [&>blockquote]:py-3 [&>blockquote]:my-6 [&>blockquote]:bg-muted/30 [&>blockquote]:italic [&>blockquote]:text-foreground/80
+              [&>figure]:my-6 [&>figure>img]:w-full [&>figure>img]:h-auto
+              [&>figure>figcaption]:text-sm [&>figure>figcaption]:text-muted-foreground [&>figure>figcaption]:mt-2 [&>figure>figcaption]:text-left
+              [&>img]:w-full [&>img]:h-auto [&>img]:my-6
+              [&>hr]:my-8 [&>hr]:border-border
+            ">
+              {contentParts.map((part, index) => (
+                <div key={index}>
+                  <SafeHTML html={part} />
+                  {index < contentParts.length - 1 && <WhatsAppCTA />}
+                </div>
+              ))}
+            </div>
+
+            {/* 7. Galeria de Imagens (se houver) */}
+            {article.additional_images && 
+             Array.isArray(article.additional_images) && 
+             article.additional_images.length > 0 && (
+              <div className="my-8">
+                <h3 className="text-lg font-bold mb-4 text-foreground">Galeria de Imagens</h3>
+                <ImageGallery images={article.additional_images.filter(img => 
+                  img && typeof img === 'object' && img.url && img.url.startsWith('http')
+                )} />
+              </div>
+            )}
+
+            {/* 8. Tags */}
+            {article.tags && article.tags.length > 0 && (
+              <div className="my-8">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Tag className="h-4 w-4 text-muted-foreground" />
+                  {article.tags.map((tag, index) => (
+                    <Badge
+                      key={index}
+                      variant="secondary"
+                      className="text-xs"
+                    >
+                      {tag}
+                    </Badge>
                   ))}
                 </div>
+              </div>
+            )}
 
-                {/* Image Gallery - Validação mais tolerante */}
-                {article.additional_images && 
-                 Array.isArray(article.additional_images) && 
-                 article.additional_images.length > 0 && (
-                  <Card className="my-8 p-6">
-                    <h3 className="text-2xl font-bold mb-6 flex items-center gap-2">
-                      <span>📸 Galeria de Imagens</span>
-                    </h3>
-                    <ImageGallery images={article.additional_images.filter(img => 
-                      img && typeof img === 'object' && img.url && img.url.startsWith('http')
-                    )} />
-                  </Card>
-                )}
+            {/* 9. Fonte / Assinatura */}
+            {(article as any).source_name && (
+              <div className="my-6 py-4 border-t border-border">
+                <p className="text-sm text-muted-foreground">
+                  Fonte: <span className="font-medium">{(article as any).source_name}</span>
+                  {(article as any).source_url && (
+                    <a 
+                      href={(article as any).source_url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="ml-1 text-primary hover:underline"
+                    >
+                      (ver original)
+                    </a>
+                  )}
+                </p>
+              </div>
+            )}
 
-                {/* Tags */}
-                {article.tags && article.tags.length > 0 && (
-                  <div className="mb-8 mt-8">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <Tag className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm font-medium text-muted-foreground">Tags:</span>
-                      {article.tags.map((tag, index) => (
-                        <Badge
-                          key={index}
-                          variant="secondary"
-                          className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors"
-                        >
-                          {tag}
-                        </Badge>
-                      ))}
+            <Separator className="my-8" />
+
+            {/* Card do Autor */}
+            {article.author && (
+              <Card className="mb-8">
+                <CardContent className="p-6">
+                  <div className="flex items-start space-x-4">
+                    <Avatar className="h-14 w-14">
+                      <AvatarImage src={article.author.avatar_url || ""} alt={article.author.name} />
+                      <AvatarFallback>
+                        <User className="h-6 w-6" />
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <h3 className="text-base font-semibold text-foreground mb-1">{article.author.name}</h3>
+                      {article.author.bio && (
+                        <p className="text-sm text-muted-foreground leading-relaxed">{article.author.bio}</p>
+                      )}
                     </div>
                   </div>
-                )}
+                </CardContent>
+              </Card>
+            )}
 
-                <Separator className="my-8" />
-
-                {/* Author Info */}
-                {article.author && (
-                  <Card>
-                    <CardContent className="p-6">
-                      <div className="flex items-start space-x-4">
-                        <Avatar className="h-16 w-16">
-                          <AvatarImage src={article.author.avatar_url || ""} alt={article.author.name} />
-                          <AvatarFallback>
-                            <User className="h-6 w-6" />
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <h3 className="text-lg font-semibold text-foreground mb-2">{article.author.name}</h3>
-                          {article.author.bio && (
-                            <p className="text-muted-foreground">{article.author.bio}</p>
-                          )}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-              </div>
-
-              {/* Sidebar */}
-              <aside className="lg:col-span-1">
-                {/* Newsletter */}
-                <Card className="mb-6">
-                  <CardContent className="p-6">
-                    <h3 className="text-lg font-semibold text-foreground mb-4">Newsletter</h3>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Receba as principais notícias de geopolítica diretamente no seu email.
-                    </p>
-                    <NewsletterSignup 
-                      placeholder="Seu email"
-                      buttonText="Assinar"
-                    />
-                  </CardContent>
-                </Card>
-
-                {/* Popular Articles */}
-                {relatedArticles && relatedArticles.length > 0 && (
-                  <Card>
-                    <CardContent className="p-6">
-                      <h3 className="text-lg font-semibold text-foreground mb-4">Artigos Relacionados</h3>
-                      <div className="space-y-4">
-                        {relatedArticles.slice(0, 3).map((relatedArticle, index) => (
-                          <Link 
-                            key={relatedArticle.id} 
-                            to={`/artigo/${relatedArticle.slug}`}
-                            className="block hover:bg-muted/50 p-2 rounded-md transition-colors"
-                          >
-                            <div className="flex space-x-3">
-                              <div className="flex-shrink-0 w-12 h-12 bg-primary rounded-lg flex items-center justify-center text-primary-foreground font-bold">
-                                {index + 1}
-                              </div>
-                              <div>
-                                <h4 className="text-sm font-medium text-foreground leading-tight mb-1">
-                                  {relatedArticle.title}
-                                </h4>
-                                <p className="text-xs text-muted-foreground">
-                                  {format(new Date(relatedArticle.published_at!), "d 'de' MMM", { locale: ptBR })}
-                                  {relatedArticle.read_time && ` • ${relatedArticle.read_time} min`}
-                                </p>
-                              </div>
-                            </div>
-                          </Link>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-              </aside>
-            </div>
+            {/* Newsletter */}
+            <Card className="mb-8 bg-muted/30">
+              <CardContent className="p-6">
+                <h3 className="text-lg font-semibold text-foreground mb-2">Receba nossas notícias</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Cadastre-se para receber as principais notícias diretamente no seu email.
+                </p>
+                <NewsletterSignup 
+                  placeholder="Seu email"
+                  buttonText="Assinar"
+                />
+              </CardContent>
+            </Card>
           </div>
+
+          {/* 10. Notícias relacionadas (seção inferior, fora da coluna única) */}
+          {relatedArticles && relatedArticles.length > 0 && (
+            <section className="max-w-5xl mx-auto mt-12">
+              <h2 className="text-2xl font-bold text-foreground mb-6">Notícias Relacionadas</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {relatedArticles
+                  .filter(a => a.id !== article.id)
+                  .slice(0, 4)
+                  .map((relatedArticle) => (
+                    <Link 
+                      key={relatedArticle.id} 
+                      to={`/artigo/${relatedArticle.slug}`}
+                      className="group block"
+                    >
+                      <article className="h-full">
+                        {relatedArticle.featured_image && (
+                          <div className="aspect-video overflow-hidden rounded-lg mb-3">
+                            <img 
+                              src={relatedArticle.featured_image} 
+                              alt={relatedArticle.title}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            />
+                          </div>
+                        )}
+                        <Badge variant="secondary" className="text-xs mb-2">
+                          {relatedArticle.category?.name || 'Geral'}
+                        </Badge>
+                        <h3 className="text-sm font-medium text-foreground leading-tight group-hover:text-primary transition-colors line-clamp-3">
+                          {relatedArticle.title}
+                        </h3>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          {format(new Date(relatedArticle.published_at!), "d 'de' MMM", { locale: ptBR })}
+                        </p>
+                      </article>
+                    </Link>
+                  ))}
+              </div>
+            </section>
+          )}
         </article>
       </main>
     </>
