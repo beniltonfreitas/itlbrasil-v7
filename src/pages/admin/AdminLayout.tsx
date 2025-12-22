@@ -168,6 +168,7 @@ const AdminLayout = () => {
     type?: "group";
     key?: string;
     submenu?: MenuSubItem[];
+    highlight?: boolean;
   };
 
   const categories = {
@@ -203,19 +204,19 @@ const AdminLayout = () => {
       external: true 
     },
     
-    // 3. Cadastrar Notícias
+    // 3. Enviar Imagem (destaque)
+    { name: "Enviar Imagem", href: "/admin/upload-imagem", icon: Image, permission: "upload-image", highlight: true },
+    
+    // 4. Cadastrar Notícias
     { name: "Cadastrar Notícias", href: "/admin/articles/new", icon: PlusCircle, permission: "article-editor" },
     
-    // 4. Todas as Notícias
+    // 5. Todas as Notícias
     { name: "Todas as Notícias", href: "/admin/articles", icon: FileText, permission: "articles" },
     
-    // 5. Importar em Massa
+    // 6. Importar em Massa
     { name: "Importar em Massa", href: "/admin/bulk-import", icon: Upload, permission: "bulk-import" },
     
-    // 6. Enviar Imagem
-    { name: "Enviar Imagem", href: "/admin/upload-imagem", icon: Image, permission: "upload-image" },
-    
-    // 6. Em Breve
+    // 7. Em Breve
     { 
       name: "Em Breve", 
       icon: Clock, 
@@ -523,11 +524,13 @@ const AdminLayout = () => {
                               "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                               isActive
                                 ? "bg-primary text-primary-foreground"
-                                : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+                                : item.highlight
+                                  ? "bg-blue-500/15 text-blue-600 dark:text-blue-400 border-l-2 border-blue-500 hover:bg-blue-500/25"
+                                  : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
                               collapsed && "justify-center"
                             )}
                           >
-                            <item.icon className="h-4 w-4 flex-shrink-0" />
+                            <item.icon className={cn("h-4 w-4 flex-shrink-0", item.highlight && !isActive && "text-blue-500")} />
                             {!collapsed && <span>{item.name}</span>}
                           </NavLink>
                         )}
