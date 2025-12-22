@@ -54,6 +54,7 @@ import CommunityGroups from "./pages/admin/CommunityGroups";
 import CommunityTopics from "./pages/admin/CommunityTopics";
 import CommunityChat from "./pages/admin/CommunityChat";
 import { ImageManager } from "./pages/admin/ImageManager";
+import ImageUploader from "./pages/admin/ImageUploader";
 import { AdsManager } from "./pages/admin/AdsManager";
 import BannersManager from "./pages/admin/BannersManager";
 import ReporterAI from "./pages/admin/ReporterAI";
@@ -164,6 +165,7 @@ const AdminRoutes = () => {
         <Route path="debug-permissions" element={<DebugPermissions />} />
         <Route path="activity-logs" element={<ActivityLogs />} />
         <Route path="image-manager" element={<ImageManager />} />
+        <Route path="upload-imagem" element={<ImageUploader />} />
         <Route path="ads" element={<AdsManager />} />
         <Route path="banners" element={<BannersManager />} />
         

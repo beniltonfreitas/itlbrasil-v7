@@ -212,6 +212,9 @@ const AdminLayout = () => {
     // 5. Importar em Massa
     { name: "Importar em Massa", href: "/admin/bulk-import", icon: Upload, permission: "bulk-import" },
     
+    // 6. Enviar Imagem
+    { name: "Enviar Imagem", href: "/admin/upload-imagem", icon: Image, permission: "upload-image" },
+    
     // 6. Em Breve
     { 
       name: "Em Breve", 
