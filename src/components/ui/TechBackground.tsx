@@ -3,25 +3,22 @@ import React from 'react';
 export const TechBackground: React.FC = () => {
   return (
     <div className="fixed inset-0 -z-10 overflow-hidden">
-      {/* Gradiente animado base */}
+      {/* Fundo institucional limpo - gradiente muito sutil de branco para azul claro */}
       <div 
-        className="absolute inset-0 bg-gradient-to-br from-[#E0F2FE] via-[#F0F9FF] to-[#FFFFFF] dark:from-[#001E3C] dark:via-[#000814] dark:to-[#000000]"
+        className="absolute inset-0"
         style={{
-          backgroundSize: '400% 400%',
+          background: 'linear-gradient(135deg, hsl(210, 40%, 98%) 0%, hsl(213, 30%, 95%) 50%, hsl(210, 40%, 98%) 100%)',
         }}
       />
       
-      {/* Textura de mapa digital */}
+      {/* Padrão geométrico sutil (opcional - muito discreto) */}
       <div 
-        className="absolute inset-0 opacity-5 dark:opacity-10"
+        className="absolute inset-0 opacity-[0.02]"
         style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0h100v100H0z' fill='none'/%3E%3Cpath d='M0 50h100M50 0v100' stroke='%2300C2FF' stroke-width='0.5' opacity='0.3'/%3E%3Ccircle cx='50' cy='50' r='2' fill='%2300C2FF' opacity='0.5'/%3E%3C/svg%3E")`,
-          backgroundSize: '100px 100px',
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0h60v60H0z' fill='none'/%3E%3Cpath d='M30 0v60M0 30h60' stroke='%23003366' stroke-width='1'/%3E%3C/svg%3E")`,
+          backgroundSize: '60px 60px',
         }}
       />
-      
-      {/* Vinheta sutil */}
-      <div className="absolute inset-0 bg-gradient-radial from-transparent via-transparent to-white/30 dark:to-black/50" />
     </div>
   );
 };

@@ -390,6 +390,33 @@ const SecuritySettings = () => {
         </CardContent>
       </Card>
 
+      {/* VPN Corporativa - Em breve */}
+      <Card className="border-dashed border-2 border-muted">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-3">
+            <Shield className="h-5 w-5 text-muted-foreground" />
+            VPN Corporativa
+            <Badge variant="secondary" className="ml-2">
+              <Clock className="h-3 w-3 mr-1" />
+              Em breve
+            </Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-muted-foreground text-sm">
+            Proteção VPN para sessões administrativas será disponibilizada em futuras atualizações. 
+            Este recurso permitirá conexões seguras e criptografadas para acesso ao painel administrativo.
+          </p>
+          <div className="mt-4 flex items-center justify-between opacity-50 pointer-events-none">
+            <div className="space-y-0.5">
+              <p className="text-sm font-medium">Ativar VPN nas sessões administrativas</p>
+              <p className="text-xs text-muted-foreground">Funcionalidade em desenvolvimento</p>
+            </div>
+            <Switch disabled checked={false} />
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="flex justify-end">
         <Button onClick={form.handleSubmit(onSubmit)}>
           <Shield className="h-4 w-4 mr-2" />
