@@ -30,7 +30,8 @@ import {
 } from 'lucide-react';
 import { Button } from './button';
 import { Separator } from './separator';
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { ImageImportDialog } from './image-import-dialog';
 
 interface RichTextEditorProps {
   value: string;
@@ -47,6 +48,8 @@ export const RichTextEditor = ({
   minHeight = '400px',
   readOnly = false,
 }: RichTextEditorProps) => {
+  const [imageDialogOpen, setImageDialogOpen] = useState(false);
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -108,13 +111,9 @@ export const RichTextEditor = ({
     editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
   }, [editor]);
 
-  const addImage = useCallback(() => {
+  const handleImageSelected = useCallback((url: string) => {
     if (!editor) return;
-    
-    const url = window.prompt('URL da imagem:');
-    if (url) {
-      editor.chain().focus().setImage({ src: url }).run();
-    }
+    editor.chain().focus().setImage({ src: url }).run();
   }, [editor]);
 
   if (!editor) {
@@ -325,8 +324,9 @@ export const RichTextEditor = ({
           type="button"
           variant="ghost"
           size="sm"
-          onClick={addImage}
+          onClick={() => setImageDialogOpen(true)}
           className="h-8 w-8 p-0"
+          title="Inserir imagem"
         >
           <ImageIcon className="h-4 w-4" />
         </Button>
@@ -345,7 +345,14 @@ export const RichTextEditor = ({
       <div style={{ minHeight }} className="overflow-auto">
         <EditorContent editor={editor} placeholder={placeholder} />
       </div>
+
+      {/* Image Import Dialog */}
+      <ImageImportDialog
+        open={imageDialogOpen}
+        onOpenChange={setImageDialogOpen}
+        onImageSelected={handleImageSelected}
+        title="Inserir Imagem no Conteúdo"
+      />
     </div>
   );
 };
-
