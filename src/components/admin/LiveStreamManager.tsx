@@ -68,7 +68,6 @@ const LiveStreamManager = () => {
       } else {
         await createStreamMutation.mutateAsync({
           ...formData,
-          viewer_count: 0,
         });
         toast.success("Transmissão criada com sucesso!");
       }
@@ -89,7 +88,7 @@ const LiveStreamManager = () => {
       stream_type: (stream.stream_type || "tv") as "tv" | "radio" | "podcast",
       status: (stream.status || "scheduled") as "live" | "scheduled" | "offline",
       thumbnail_url: stream.thumbnail_url || "",
-      scheduled_start: stream.scheduled_at ? new Date(stream.scheduled_at).toISOString().slice(0, 16) : "",
+      scheduled_start: stream.scheduled_start ? new Date(stream.scheduled_start).toISOString().slice(0, 16) : "",
       scheduled_end: "",
       chat_enabled: stream.chat_enabled ?? true,
       embed_code: stream.embed_code || "",
@@ -366,10 +365,10 @@ const LiveStreamManager = () => {
                       <span>{stream.viewer_count} espectadores</span>
                     </div>
 
-                    {stream.scheduled_at && (
+                    {stream.scheduled_start && (
                       <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
                         <Calendar className="h-4 w-4" />
-                        <span>{new Date(stream.scheduled_at).toLocaleString()}</span>
+                        <span>{new Date(stream.scheduled_start).toLocaleString()}</span>
                       </div>
                     )}
                     

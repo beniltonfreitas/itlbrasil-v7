@@ -3,21 +3,21 @@ import { supabase } from "@/integrations/supabase/client";
 
 export interface MediaItem {
   id: string;
-  file_name: string;
-  title?: string;
-  description?: string;
+  file_name?: string;
+  title: string;
+  description?: string | null;
   file_url: string;
   file_type?: string;
-  thumbnail_url?: string;
-  media_type?: string;
-  content_type?: string;
-  duration?: number;
-  file_size?: number;
-  tags?: string[];
-  uploaded_by?: string;
-  is_public?: boolean;
+  thumbnail_url?: string | null;
+  media_type: string;
+  content_type: string;
+  duration?: number | null;
+  file_size?: number | null;
+  tags?: string[] | null;
+  uploaded_by?: string | null;
+  is_public?: boolean | null;
   created_at: string;
-  updated_at?: string;
+  updated_at: string;
 }
 
 export const useMediaLibrary = (contentType?: string) => {
@@ -39,7 +39,11 @@ export const useMediaLibrary = (contentType?: string) => {
         throw new Error(`Erro ao carregar biblioteca de mídia: ${error.message}`);
       }
 
-      return data as MediaItem[];
+      // Map data to include file_name from title if not available
+      return (data || []).map((item: any) => ({
+        ...item,
+        file_name: item.file_name || item.title || 'Untitled'
+      })) as MediaItem[];
     },
   });
 };
@@ -68,11 +72,9 @@ export const useUploadMedia = () => {
 
       // Criar registro na biblioteca de mídia
       const mediaData = {
-        file_name: file.name,
         title: metadata.title || file.name,
         description: metadata.description,
         file_url: uploadData.data.url,
-        file_type: file.type,
         thumbnail_url: uploadData.data.thumbnailUrl,
         media_type: file.type.startsWith('video/') ? 'video' : 
                    file.type.startsWith('audio/') ? 'audio' : 'image',

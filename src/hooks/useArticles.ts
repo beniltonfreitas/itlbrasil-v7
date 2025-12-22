@@ -138,6 +138,9 @@ export const useArticle = (slug: string) => {
 
       return {
         ...data,
+        meta_keywords: typeof data.meta_keywords === 'string' 
+          ? data.meta_keywords.split(',').filter(Boolean) 
+          : data.meta_keywords || [],
         additional_images: data.additional_images ? 
           (Array.isArray(data.additional_images) ? data.additional_images as unknown as ImageData[] : []) 
           : []
@@ -183,6 +186,9 @@ export const useArticleById = (id: string) => {
 
       return {
         ...data,
+        meta_keywords: typeof data.meta_keywords === 'string' 
+          ? data.meta_keywords.split(',').filter(Boolean) 
+          : data.meta_keywords || [],
         additional_images: data.additional_images ? 
           (Array.isArray(data.additional_images) ? data.additional_images as unknown as ImageData[] : []) 
           : []

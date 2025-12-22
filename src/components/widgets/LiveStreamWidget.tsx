@@ -108,9 +108,9 @@ export const LiveStreamWidget = () => {
                   {getStreamIcon(nextStream.stream_type)}
                   {nextStream.stream_type.toUpperCase()}
                 </Badge>
-                {nextStream.scheduled_at && (
+                {nextStream.scheduled_start && (
                   <span className="text-muted-foreground">
-                    {new Date(nextStream.scheduled_at).toLocaleString('pt-BR')}
+                    {new Date(nextStream.scheduled_start).toLocaleString('pt-BR')}
                   </span>
                 )}
               </div>

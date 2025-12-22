@@ -3,12 +3,12 @@ import { supabase } from "@/integrations/supabase/client";
 
 export interface PlatformIntegration {
   id: string;
-  platform_name: string;
+  platform_name?: string;
+  platform: string;
   user_id?: string | null;
-  platform?: string | null;
   access_token?: string | null;
   refresh_token?: string | null;
-  expires_at?: string | null;
+  token_expires_at?: string | null;
   channel_id?: string | null;
   channel_name?: string | null;
   settings?: Record<string, any>;
@@ -30,7 +30,11 @@ export const usePlatformIntegrations = () => {
         throw new Error(`Erro ao carregar integrações: ${error.message}`);
       }
 
-      return data as PlatformIntegration[];
+      // Map platform to platform_name for backwards compatibility
+      return (data || []).map((item: any) => ({
+        ...item,
+        platform_name: item.platform_name || item.platform
+      })) as PlatformIntegration[];
     },
   });
 };
@@ -39,7 +43,7 @@ export const useCreatePlatformIntegration = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (integrationData: Omit<PlatformIntegration, 'id' | 'created_at' | 'updated_at'>) => {
+    mutationFn: async (integrationData: { platform: string; [key: string]: any }) => {
       const { data, error } = await supabase
         .from('platform_integrations')
         .insert([integrationData])

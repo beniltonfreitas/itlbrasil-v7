@@ -42,7 +42,13 @@ export const useArticlesQueue = (status?: string) => {
         throw new Error(`Failed to fetch articles queue: ${error.message}`);
       }
 
-      return (data || []) as ArticleQueue[];
+      // Handle meta_keywords as string or array
+      return (data || []).map((item: any) => ({
+        ...item,
+        meta_keywords: typeof item.meta_keywords === 'string' 
+          ? item.meta_keywords.split(',').filter(Boolean)
+          : item.meta_keywords || []
+      })) as ArticleQueue[];
     },
   });
 };
@@ -72,6 +78,11 @@ export const useApproveArticle = () => {
         .replace(/\s+/g, '-')
         .trim();
 
+      // Handle meta_keywords - convert array to string if needed
+      const metaKeywords = Array.isArray(queueArticle.meta_keywords) 
+        ? queueArticle.meta_keywords.join(',')
+        : queueArticle.meta_keywords;
+
       // Create article
       const { data: article, error: createError } = await supabase
         .from('articles')
@@ -87,7 +98,7 @@ export const useApproveArticle = () => {
           tags: queueArticle.tags,
           meta_title: queueArticle.meta_title,
           meta_description: queueArticle.meta_description,
-          meta_keywords: queueArticle.meta_keywords,
+          meta_keywords: metaKeywords,
           read_time: queueArticle.read_time,
           import_mode: queueArticle.import_mode,
           status: 'published',
