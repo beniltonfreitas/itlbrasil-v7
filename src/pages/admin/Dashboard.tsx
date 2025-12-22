@@ -11,7 +11,6 @@ import { ptBR } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
 import { FIXED_CATEGORIES } from "@/lib/newsUtils";
 import { AccessibilityCard } from "@/components/dashboard/AccessibilityCard";
-import { VPNDashboardCard } from "@/components/dashboard/VPNDashboardCard";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -93,9 +92,6 @@ const Dashboard = () => {
           Visão geral do sistema de notícias ITL Brasil
         </p>
       </div>
-
-      {/* VPN Dashboard Card */}
-      <VPNDashboardCard />
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
