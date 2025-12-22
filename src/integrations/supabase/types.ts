@@ -803,6 +803,9 @@ export type Database = {
           excerpt: string | null
           featured: boolean | null
           featured_image: string | null
+          featured_image_alt: string | null
+          featured_image_credit: string | null
+          featured_image_json: Json | null
           id: string
           import_mode: string | null
           meta_description: string | null
@@ -830,6 +833,9 @@ export type Database = {
           excerpt?: string | null
           featured?: boolean | null
           featured_image?: string | null
+          featured_image_alt?: string | null
+          featured_image_credit?: string | null
+          featured_image_json?: Json | null
           id?: string
           import_mode?: string | null
           meta_description?: string | null
@@ -857,6 +863,9 @@ export type Database = {
           excerpt?: string | null
           featured?: boolean | null
           featured_image?: string | null
+          featured_image_alt?: string | null
+          featured_image_credit?: string | null
+          featured_image_json?: Json | null
           id?: string
           import_mode?: string | null
           meta_description?: string | null
