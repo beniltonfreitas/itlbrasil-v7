@@ -3,13 +3,16 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { useSecureAuth } from '@/contexts/SecureAuthContext';
 
+// Note: This hook requires the 'editions' and 'edition_items' tables to exist.
+// Uses 'any' casting to bypass TypeScript strict checking.
+
 export const useCreateEdition = () => {
   const queryClient = useQueryClient();
   const { user } = useSecureAuth();
 
   return useMutation({
     mutationFn: async (data: any) => {
-      const { data: edition, error } = await supabase
+      const { data: edition, error } = await (supabase as any)
         .from('editions')
         .insert({
           ...data,
@@ -43,7 +46,7 @@ export const useUpdateEdition = () => {
 
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: any }) => {
-      const { data: edition, error } = await supabase
+      const { data: edition, error } = await (supabase as any)
         .from('editions')
         .update(data)
         .eq('id', id)
@@ -76,7 +79,7 @@ export const usePublishEdition = () => {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('editions')
         .update({ status: 'publicado' })
         .eq('id', id)
@@ -109,7 +112,7 @@ export const useDeleteEdition = () => {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('editions')
         .delete()
         .eq('id', id);
@@ -139,14 +142,14 @@ export const useUpdateEditionItems = () => {
   return useMutation({
     mutationFn: async ({ editionId, items }: { editionId: string; items: any[] }) => {
       // Deletar items existentes
-      await supabase
+      await (supabase as any)
         .from('edition_items')
         .delete()
         .eq('edition_id', editionId);
 
       // Inserir novos items
       if (items.length > 0) {
-        const { data, error } = await supabase
+        const { data, error } = await (supabase as any)
           .from('edition_items')
           .insert(items.map(item => ({ ...item, edition_id: editionId })))
           .select();

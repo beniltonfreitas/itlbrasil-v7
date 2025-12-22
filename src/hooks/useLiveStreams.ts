@@ -5,13 +5,12 @@ export interface LiveStream {
   id: string;
   title: string;
   description?: string | null;
-  stream_url?: string | null;
-  stream_type?: string | null;
+  stream_url: string;
+  stream_type: string;
   status: string;
   thumbnail_url?: string | null;
-  scheduled_at?: string | null;
-  started_at?: string | null;
-  ended_at?: string | null;
+  scheduled_start?: string | null;
+  scheduled_end?: string | null;
   viewer_count?: number | null;
   chat_enabled?: boolean | null;
   embed_code?: string | null;
@@ -47,10 +46,24 @@ export const useCreateLiveStream = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (streamData: Omit<LiveStream, 'id' | 'created_at' | 'updated_at'>) => {
+    mutationFn: async (streamData: { 
+      title: string; 
+      stream_url: string; 
+      stream_type: string;
+      description?: string;
+      thumbnail_url?: string;
+      scheduled_start?: string;
+      scheduled_end?: string;
+      chat_enabled?: boolean;
+      embed_code?: string;
+      status?: string;
+    }) => {
       const { data, error } = await supabase
         .from('live_streams')
-        .insert([streamData])
+        .insert([{
+          ...streamData,
+          status: streamData.status || 'offline'
+        }])
         .select()
         .single();
 
