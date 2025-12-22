@@ -18,6 +18,7 @@ import {
   ListOrdered,
   Quote,
   Code,
+  Code2,
   Link as LinkIcon,
   Image as ImageIcon,
   AlignLeft,
@@ -30,6 +31,7 @@ import {
 } from 'lucide-react';
 import { Button } from './button';
 import { Separator } from './separator';
+import { Textarea } from './textarea';
 import { useCallback, useEffect, useState } from 'react';
 import { ImageImportDialog } from './image-import-dialog';
 
@@ -49,6 +51,8 @@ export const RichTextEditor = ({
   readOnly = false,
 }: RichTextEditorProps) => {
   const [imageDialogOpen, setImageDialogOpen] = useState(false);
+  const [isSourceMode, setIsSourceMode] = useState(false);
+  const [htmlSource, setHtmlSource] = useState(value);
 
   const editor = useEditor({
     extensions: [
@@ -115,6 +119,25 @@ export const RichTextEditor = ({
     if (!editor) return;
     editor.chain().focus().setImage({ src: url }).run();
   }, [editor]);
+
+  const toggleSourceMode = useCallback(() => {
+    if (!editor) return;
+    
+    if (isSourceMode) {
+      // Saindo do modo source, aplicar HTML ao editor
+      editor.commands.setContent(htmlSource);
+      onChange(htmlSource);
+    } else {
+      // Entrando no modo source, pegar HTML do editor
+      setHtmlSource(editor.getHTML());
+    }
+    setIsSourceMode(!isSourceMode);
+  }, [editor, isSourceMode, htmlSource, onChange]);
+
+  const handleSourceChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newHtml = e.target.value;
+    setHtmlSource(newHtml);
+  }, []);
 
   if (!editor) {
     return null;
@@ -336,14 +359,40 @@ export const RichTextEditor = ({
           size="sm"
           onClick={() => editor.chain().focus().setHorizontalRule().run()}
           className="h-8 w-8 p-0"
+          title="Linha horizontal"
         >
           <Minus className="h-4 w-4" />
+        </Button>
+
+        <Separator orientation="vertical" className="mx-1 h-8" />
+
+        {/* HTML Source Toggle */}
+        <Button
+          type="button"
+          variant={isSourceMode ? 'default' : 'ghost'}
+          size="sm"
+          onClick={toggleSourceMode}
+          className="h-8 px-2 gap-1"
+          title={isSourceMode ? 'Modo Visual' : 'Modo HTML'}
+        >
+          <Code2 className="h-4 w-4" />
+          <span className="text-xs">{isSourceMode ? 'Visual' : 'HTML'}</span>
         </Button>
       </div>
 
       {/* Editor Content */}
       <div style={{ minHeight }} className="overflow-auto">
-        <EditorContent editor={editor} placeholder={placeholder} />
+        {isSourceMode ? (
+          <Textarea
+            value={htmlSource}
+            onChange={handleSourceChange}
+            className="font-mono text-sm border-0 rounded-none resize-none focus-visible:ring-0"
+            style={{ minHeight }}
+            placeholder="Digite ou cole o código HTML aqui..."
+          />
+        ) : (
+          <EditorContent editor={editor} placeholder={placeholder} />
+        )}
       </div>
 
       {/* Image Import Dialog */}
