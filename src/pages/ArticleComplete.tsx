@@ -186,17 +186,9 @@ const ArticleComplete = () => {
             <div className="grid lg:grid-cols-3 gap-8">
               {/* Main Content */}
               <div className="lg:col-span-2">
-                {/* Audio Player */}
-                <AudioPlayer
-                  title={article.title}
-                  content={article.content}
-                  excerpt={article.excerpt}
-                  className="mb-6"
-                />
-
                 {/* Featured Image */}
                 {article.featured_image && (
-                  <div className="mb-8">
+                  <div className="mb-6">
                     <img
                       src={article.featured_image}
                       alt={article.title}
@@ -209,6 +201,14 @@ const ArticleComplete = () => {
                     )}
                   </div>
                 )}
+
+                {/* Audio Player - Abaixo da imagem */}
+                <AudioPlayer
+                  title={article.title}
+                  content={article.content}
+                  excerpt={article.excerpt}
+                  className="mb-8"
+                />
 
                 {/* Article Content with WhatsApp CTAs */}
                 <div className="prose prose-lg max-w-none text-foreground [&>h2]:text-2xl [&>h2]:font-bold [&>h2]:mt-8 [&>h2]:mb-4 [&>h3]:text-xl [&>h3]:font-semibold [&>h3]:mt-6 [&>h3]:mb-3 [&>p]:mb-3 [&>p]:leading-relaxed [&>br]:hidden [&>blockquote]:border-l-4 [&>blockquote]:border-primary [&>blockquote]:pl-4 [&>blockquote]:italic [&>blockquote]:my-6">

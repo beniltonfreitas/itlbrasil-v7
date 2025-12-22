@@ -6,6 +6,7 @@ import { removeWhatsAppCTA } from "@/lib/textUtils";
 import { useSecureAuth } from "@/contexts/SecureAuthContext";
 import { publishToWhatsApp } from "@/lib/whatsappPublisher";
 import { DEFAULT_AUTHOR_ID } from "@/constants/authors";
+import { createWebStoryFromArticle } from "@/lib/webStoryUtils";
 
 export interface CreateArticleData {
   title: string;
@@ -174,7 +175,7 @@ export const useCreateArticle = () => {
         console.log('📝 Crédito da imagem recebido:', data.image_credit);
       }
 
-      // Se foi publicado, enviar para WhatsApp
+      // Se foi publicado, enviar para WhatsApp e criar WebStory
       if (finalStatus === "published") {
         const author = user?.user_metadata?.name || user?.email || 'Redação';
         
@@ -188,6 +189,11 @@ export const useCreateArticle = () => {
           author,
           published_at: article.published_at || new Date().toISOString(),
         });
+
+        // Criar WebStory automaticamente (não bloqueia se falhar)
+        createWebStoryFromArticle(article.id).catch(err => 
+          console.warn('⚠️ Falha ao criar WebStory:', err)
+        );
       }
 
       return article;
@@ -276,7 +282,7 @@ export const useUpdateArticle = () => {
         console.log('📝 Crédito da imagem recebido:', updateData.image_credit);
       }
 
-      // Se foi recém-publicado, enviar para WhatsApp
+      // Se foi recém-publicado, enviar para WhatsApp e criar WebStory
       if (isNewlyPublished) {
         const author = user?.user_metadata?.name || user?.email || 'Redação';
         
@@ -290,6 +296,11 @@ export const useUpdateArticle = () => {
           author,
           published_at: article.published_at || new Date().toISOString(),
         });
+
+        // Criar WebStory automaticamente (não bloqueia se falhar)
+        createWebStoryFromArticle(article.id).catch(err => 
+          console.warn('⚠️ Falha ao criar WebStory:', err)
+        );
       }
 
       return article;
