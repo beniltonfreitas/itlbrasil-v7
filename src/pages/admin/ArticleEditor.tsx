@@ -131,6 +131,7 @@ const ArticleEditor = () => {
   const heroInputRef = useRef<HTMLInputElement>(null);
   const ogInputRef = useRef<HTMLInputElement>(null);
   const cardInputRef = useRef<HTMLInputElement>(null);
+  const singleUploadRef = useRef<HTMLInputElement>(null);
   
   const isEditing = !!id;
   const { data: article, isLoading: loadingArticle } = useArticleById(id || "");
@@ -275,6 +276,39 @@ const ArticleEditor = () => {
       if (field === 'hero' && heroInputRef.current) heroInputRef.current.value = "";
       if (field === 'og' && ogInputRef.current) ogInputRef.current.value = "";
       if (field === 'card' && cardInputRef.current) cardInputRef.current.value = "";
+    }
+  };
+
+  // Handler para upload único que preenche todos os campos
+  const handleSingleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingImage('single');
+    try {
+      const result = await uploadImageToStorage(file);
+      
+      const currentImagem = form.getValues('imagem');
+      form.setValue('imagem', {
+        hero: result.url,
+        og: result.url,
+        card: result.url,
+        alt: currentImagem.alt || form.getValues('title') || ''
+      });
+      
+      toast({
+        title: "Imagem enviada",
+        description: "Todos os campos de imagem foram preenchidos automaticamente.",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro no upload",
+        description: error instanceof Error ? error.message : "Erro desconhecido",
+        variant: "destructive",
+      });
+    } finally {
+      setUploadingImage(null);
+      if (singleUploadRef.current) singleUploadRef.current.value = "";
     }
   };
 
@@ -723,8 +757,33 @@ const ArticleEditor = () => {
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      <div className="text-sm text-muted-foreground mb-4">
+                      <div className="text-sm text-muted-foreground mb-2">
                         💡 <strong>Dica:</strong> Arraste uma imagem para qualquer campo ou cole uma URL. Hero replica para OG e Card automaticamente.
+                      </div>
+                      
+                      {/* Botão único de upload */}
+                      <div className="flex justify-center mb-4">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => singleUploadRef.current?.click()}
+                          disabled={uploadingImage === 'single'}
+                          className="gap-2"
+                        >
+                          {uploadingImage === 'single' ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Upload className="h-4 w-4" />
+                          )}
+                          Enviar Imagem (preenche todos os campos)
+                        </Button>
+                        <input
+                          ref={singleUploadRef}
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp,image/gif"
+                          className="hidden"
+                          onChange={handleSingleImageUpload}
+                        />
                       </div>
                       
                       <FormField
