@@ -5,10 +5,11 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, X, MoveUp, MoveDown, Image as ImageIcon, Upload, Loader2 } from "lucide-react";
+import { Plus, X, MoveUp, MoveDown, Image as ImageIcon, Upload, Loader2, Download } from "lucide-react";
 import { ImageData } from "@/hooks/useArticles";
 import { uploadImageToStorage } from "@/lib/imageUpload";
 import { useToast } from "@/hooks/use-toast";
+import { useImageImport } from "@/hooks/useImageImport";
 import { cn } from "@/lib/utils";
 
 interface ImageGalleryEditorProps {
@@ -25,6 +26,7 @@ export const ImageGalleryEditor: React.FC<ImageGalleryEditorProps> = ({
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const { importFromUrl, isImporting } = useImageImport();
 
   const generateId = () => `img_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
@@ -41,6 +43,25 @@ export const ImageGalleryEditor: React.FC<ImageGalleryEditorProps> = ({
 
     onChange([...images, newImage]);
     setNewImageUrl("");
+  };
+
+  // Import image from URL and save to storage
+  const handleImportFromUrl = async () => {
+    if (!newImageUrl.trim()) return;
+
+    const cachedUrl = await importFromUrl(newImageUrl.trim());
+    if (cachedUrl) {
+      const newImage: ImageData = {
+        id: generateId(),
+        url: cachedUrl,
+        caption: "",
+        credit: "",
+        position: images.length,
+      };
+
+      onChange([...images, newImage]);
+      setNewImageUrl("");
+    }
   };
 
   const removeImage = (imageId: string) => {
@@ -216,18 +237,39 @@ export const ImageGalleryEditor: React.FC<ImageGalleryEditorProps> = ({
           </p>
         </div>
 
-        {/* URL Input */}
+        {/* URL Input with Import Button */}
         <div className="flex gap-2">
           <Input
             placeholder="Ou cole uma URL de imagem..."
             value={newImageUrl}
             onChange={(e) => setNewImageUrl(e.target.value)}
             onKeyPress={(e) => e.key === "Enter" && addImage()}
+            disabled={isImporting}
           />
-          <Button onClick={addImage} disabled={!newImageUrl.trim()}>
+          <Button 
+            onClick={handleImportFromUrl} 
+            disabled={!newImageUrl.trim() || isImporting}
+            variant="default"
+            title="Importar para o Storage (recomendado)"
+          >
+            {isImporting ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Download className="h-4 w-4" />
+            )}
+          </Button>
+          <Button 
+            onClick={addImage} 
+            disabled={!newImageUrl.trim() || isImporting}
+            variant="outline"
+            title="Usar link direto (pode quebrar)"
+          >
             <Plus className="h-4 w-4" />
           </Button>
         </div>
+        <p className="text-xs text-muted-foreground -mt-2">
+          💡 Use o botão azul para importar (recomendado) ou o botão + para link direto
+        </p>
 
         <input
           ref={fileInputRef}
