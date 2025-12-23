@@ -6,18 +6,15 @@ export interface WebStory {
   id: string;
   title: string;
   slug: string;
-  description: string;
-  publisher_logo: string;
-  status: 'rascunho' | 'publicado';
   cover_image?: string;
-  cover_alt?: string;
-  cover_credit?: string;
-  category?: string;
-  tags?: string[];
-  pages?: any[];
+  status: 'rascunho' | 'publicado';
   author_id: string;
   created_at: string;
   updated_at: string;
+  meta_description?: string;
+  meta_keywords?: string[];
+  source_article_id?: string;
+  views_count?: number;
 }
 
 export interface WebStoryPage {
@@ -40,12 +37,7 @@ export const useWebStories = () => {
 
       if (error) throw error;
       
-      // Map published (boolean) to status (enum) for backward compatibility
-      // Until migration is applied, database still has 'published' field
-      return (data || []).map((item: any) => ({
-        ...item,
-        status: item.status || (item.published ? 'publicado' : 'rascunho')
-      })) as WebStory[];
+      return (data || []) as WebStory[];
     },
   });
 };
@@ -98,15 +90,9 @@ export const useUpdateWebStory = () => {
 
   return useMutation({
     mutationFn: async ({ id, ...data }: Partial<WebStory> & { id: string }) => {
-      // Map status back to published for backward compatibility
-      const updateData: any = { ...data };
-      if ('status' in updateData) {
-        updateData.published = updateData.status === 'publicado';
-      }
-      
       const { data: webstory, error } = await supabase
         .from('webstories')
-        .update(updateData)
+        .update(data)
         .eq('id', id)
         .select()
         .single();
@@ -151,13 +137,9 @@ export const useToggleWebStoryPublish = () => {
 
   return useMutation({
     mutationFn: async ({ id, status }: { id: string; status: 'rascunho' | 'publicado' }) => {
-      // Update both fields for backward compatibility
       const { data, error } = await supabase
         .from('webstories')
-        .update({ 
-          status,
-          published: status === 'publicado' 
-        })
+        .update({ status })
         .eq('id', id)
         .select()
         .single();

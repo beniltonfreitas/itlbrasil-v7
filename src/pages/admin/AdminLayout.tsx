@@ -210,6 +210,9 @@ const AdminLayout = () => {
     // 3.5. Notícias AI
     { name: "Notícias AI", href: "/admin/noticias-ai", icon: Newspaper, permission: "noticias-ai" },
     
+    // 3.6. Web Stories (abaixo de Notícias AI)
+    { name: "Web Stories", href: "/admin/webstories", icon: BookOpen, permission: "webstories" },
+    
     // 4. Cadastrar Notícias
     { name: "Cadastrar Notícias", href: "/admin/articles/new", icon: PlusCircle, permission: "article-editor" },
     
@@ -245,7 +248,6 @@ const AdminLayout = () => {
         { name: "Repórter GPT", href: "https://chatgpt.com/g/g-6900f51c074c819192f61cb9e3f9010f-reporter-ai", icon: ExternalLink, permission: "reporter-gpt", external: true, category: "reporter-ai" },
         
         // ============ Outras Funcionalidades ============
-        { name: "Web Stories", href: "/admin/webstories", icon: BookOpen, permission: "webstories", category: "funcionalidades" },
         { name: "Analytics", href: "/admin/analytics", icon: BarChart3, permission: "analytics", category: "funcionalidades" },
         { name: "Logs de Atividade", href: "/admin/activity-logs", icon: Shield, permission: "activity-logs", category: "funcionalidades" },
         { name: "Anúncios", href: "/admin/ads", icon: DollarSign, permission: "ads", category: "funcionalidades" },
