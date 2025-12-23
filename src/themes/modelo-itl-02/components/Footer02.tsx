@@ -25,6 +25,7 @@ export const Footer02: React.FC = () => {
   const quickLinks = [
     { name: 'Quem Somos', href: '/sobre' },
     { name: 'Contato', href: '/contato' },
+    { name: 'Web Stories', href: '/web-stories' },
     { name: 'Política de Privacidade', href: '/privacidade' },
     { name: 'Termos de Uso', href: '/termos' },
     { name: 'RSS', href: '/rss' }
