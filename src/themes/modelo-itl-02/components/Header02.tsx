@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Search, Menu, X, Facebook, Twitter, Youtube } from 'lucide-react';
+import { Search, Menu, X } from 'lucide-react';
 import { InfoBar } from '@/components/widgets/InfoBar';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { WebStoriesCarousel } from '@/components/WebStoriesCarousel';
 
 export const Header02: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -140,6 +140,9 @@ export const Header02: React.FC = () => {
           </div>
         </div>
       </nav>
+
+      {/* Web Stories Carousel - Below Navigation */}
+      <WebStoriesCarousel />
 
       {/* Mobile Menu */}
       {isMenuOpen && (
