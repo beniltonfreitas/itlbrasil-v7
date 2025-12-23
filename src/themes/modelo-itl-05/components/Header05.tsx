@@ -51,7 +51,7 @@ export const Header05: React.FC = () => {
       <div className="container mx-auto px-4 py-2">
         <div className="flex items-center justify-between gap-4">
           {/* Logo - 450x150 area */}
-          <div className="flex-shrink-0" style={{ width: '450px', height: '150px' }}>
+          <div className="flex-shrink-0" style={{ width: '300px', height: '100px' }}>
             <Link to="/" className="flex items-center h-full">
               <img 
                 src={logoItlBrasil} 
