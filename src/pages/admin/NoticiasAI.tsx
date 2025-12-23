@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Newspaper, Send, Trash2, Copy, Check, Loader2 } from "lucide-react";
+import { useState, useRef } from "react";
+import { Newspaper, Send, Trash2, Copy, Check, Loader2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { uploadImageToStorage } from "@/lib/imageUpload";
 
 interface GeneratedContent {
   cadastroManual: {
@@ -35,12 +36,14 @@ interface GeneratedContent {
 const NoticiasAI = () => {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [generatedContent, setGeneratedContent] = useState<GeneratedContent>({
     cadastroManual: null,
     json: null,
   });
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("cadastro");
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   const detectInputType = (text: string): "EXCLUSIVA" | "CADASTRO_MANUAL" | "JSON" | "LINK" | "TEXT" => {
     const trimmed = text.trim().toUpperCase();
@@ -96,6 +99,32 @@ const NoticiasAI = () => {
   const handleClear = () => {
     setInput("");
     setGeneratedContent({ cadastroManual: null, json: null });
+  };
+
+  // Handler para upload de imagem que insere URL no campo de texto
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingImage(true);
+    try {
+      const result = await uploadImageToStorage(file);
+      
+      // Insere a URL da imagem no campo de texto (append se já houver conteúdo)
+      setInput(prev => {
+        if (prev.trim()) {
+          return `${prev}\n${result.url}`;
+        }
+        return result.url;
+      });
+      
+      toast.success("Imagem enviada! URL inserida no campo de texto.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Erro ao enviar imagem");
+    } finally {
+      setUploadingImage(false);
+      if (imageInputRef.current) imageInputRef.current.value = "";
+    }
   };
 
   const copyToClipboard = async (text: string, fieldName: string) => {
@@ -244,6 +273,37 @@ const NoticiasAI = () => {
             <Badge variant="outline" className="cursor-pointer hover:bg-primary/10" onClick={() => setInput("JSON\n\n")}>
               JSON
             </Badge>
+          </div>
+
+          {/* Botão Enviar Imagem */}
+          <div className="flex items-center gap-2 mb-2">
+            <input
+              type="file"
+              ref={imageInputRef}
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              onChange={handleImageUpload}
+              className="hidden"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => imageInputRef.current?.click()}
+              disabled={uploadingImage}
+              className="border-primary text-primary hover:bg-primary/10"
+            >
+              {uploadingImage ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Enviando...
+                </>
+              ) : (
+                <>
+                  <Upload className="h-4 w-4 mr-2" />
+                  Enviar Imagem (preenche todos os campos)
+                </>
+              )}
+            </Button>
           </div>
           
           <Textarea
