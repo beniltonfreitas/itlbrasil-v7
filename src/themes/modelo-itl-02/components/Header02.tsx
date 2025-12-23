@@ -4,6 +4,7 @@ import { Search, Menu, X } from 'lucide-react';
 import { InfoBar } from '@/components/widgets/InfoBar';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { WebStoriesCarousel } from '@/components/WebStoriesCarousel';
 
 export const Header02: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -74,9 +75,14 @@ export const Header02: React.FC = () => {
               </Link>
             </div>
 
+            {/* Web Stories - Inline (desktop) */}
+            <div className="hidden lg:flex flex-1 justify-center overflow-hidden">
+              <WebStoriesCarousel />
+            </div>
+
             {/* Search Bar - Desktop */}
-            <div className="hidden md:flex max-w-xs flex-1 justify-end">
-              <form onSubmit={handleSearch} className="flex w-full max-w-sm">
+            <div className="hidden md:flex w-full max-w-sm flex-shrink-0 justify-end">
+              <form onSubmit={handleSearch} className="flex w-full">
                 <Input
                   type="text"
                   placeholder="Buscar notícias..."

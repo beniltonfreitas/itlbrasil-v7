@@ -107,6 +107,12 @@ All colors MUST be HSL.
     --shadow-news: 0 4px 20px -4px hsl(var(--primary) / 0.1);
     --shadow-card: 0 2px 10px -2px hsl(var(--foreground) / 0.1);
 
+    /* Web Stories ring gradient */
+    --story-1: 45 100% 55%;
+    --story-2: 330 85% 55%;
+    --story-3: 270 90% 60%;
+    --story-foreground: 0 0% 100%;
+
     --radius: 0.75rem;
 
     /* Sidebar colors (keeping original) */
@@ -148,6 +154,12 @@ All colors MUST be HSL.
     --primary-foreground: 213 25% 8%;
     --primary-light: 213 80% 75%;
     --primary-dark: 213 90% 55%;
+
+    /* Web Stories ring gradient (dark) */
+    --story-1: 45 100% 60%;
+    --story-2: 330 90% 60%;
+    --story-3: 270 95% 65%;
+    --story-foreground: 0 0% 100%;
 
     --secondary: 213 20% 15%;
     --secondary-foreground: 0 0% 95%;

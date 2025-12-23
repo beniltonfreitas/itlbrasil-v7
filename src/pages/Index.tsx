@@ -11,7 +11,6 @@ import { useArticles } from "@/hooks/useArticles";
 import { useCategories } from "@/hooks/useCategories";
 import { BannerSlider } from "@/components/BannerSlider";
 import { LiveStreamWidget } from "@/components/widgets/LiveStreamWidget";
-import { WebStoriesCarousel } from "@/components/WebStoriesCarousel";
 
 
 import heroImage from "@/assets/hero-geopolitics.jpg";
@@ -172,13 +171,6 @@ const Index = () => {
 
               </div>
             </div>
-          </div>
-        </section>
-
-        {/* Web Stories Carousel */}
-        <section className="py-4">
-          <div className="container mx-auto px-4">
-            <WebStoriesCarousel />
           </div>
         </section>
 
