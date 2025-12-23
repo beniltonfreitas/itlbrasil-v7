@@ -55,16 +55,16 @@ export const Header02: React.FC = () => {
       {/* Main Header - White */}
       <div className="bg-white border-b border-gray-200">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-4">
             {/* Logo */}
-            <div className="flex-1 md:flex-none">
+            <div className="flex-shrink-0">
               <Link to="/" className="flex items-center gap-3">
                 <img 
                   src="/Logo_ITL.png" 
                   alt="Instituto Tribuna Livre" 
                   className="h-12 w-auto"
                 />
-                <div>
+                <div className="hidden sm:block">
                   <div className="text-2xl font-bold text-blue-600">
                     Instituto Tribuna Livre
                   </div>
@@ -75,8 +75,13 @@ export const Header02: React.FC = () => {
               </Link>
             </div>
 
+            {/* Web Stories Carousel - Inline */}
+            <div className="hidden md:flex flex-1 justify-center overflow-hidden">
+              <WebStoriesCarousel />
+            </div>
+
             {/* Search Bar - Desktop */}
-            <div className="hidden md:flex flex-1 max-w-md mx-8">
+            <div className="hidden md:flex max-w-xs">
               <form onSubmit={handleSearch} className="flex w-full">
                 <Input
                   type="text"
@@ -89,11 +94,6 @@ export const Header02: React.FC = () => {
                   <Search size={16} />
                 </Button>
               </form>
-            </div>
-
-            {/* Right Info - Desktop */}
-            <div className="hidden lg:flex items-center">
-              <InfoBar />
             </div>
 
             {/* Mobile Menu Toggle */}
@@ -140,9 +140,6 @@ export const Header02: React.FC = () => {
           </div>
         </div>
       </nav>
-
-      {/* Web Stories Carousel - Below Navigation */}
-      <WebStoriesCarousel />
 
       {/* Mobile Menu */}
       {isMenuOpen && (
