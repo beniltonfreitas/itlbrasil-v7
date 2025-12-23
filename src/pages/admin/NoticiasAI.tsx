@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Newspaper, Send, Trash2, Copy, Check, Loader2, Upload } from "lucide-react";
+import { Newspaper, Send, Trash2, Copy, Check, Loader2, Upload, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,6 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { uploadImageToStorage } from "@/lib/imageUpload";
+import { useCreateArticle } from "@/hooks/useArticleMutations";
+import { useCategories } from "@/hooks/useCategories";
 
 interface GeneratedContent {
   cadastroManual: {
@@ -30,12 +32,32 @@ interface GeneratedContent {
       metaDescricao: string;
     };
   } | null;
-  json: object | null;
+  json: {
+    noticias?: Array<{
+      titulo: string;
+      slug: string;
+      resumo: string;
+      categoria: string;
+      fonte: string;
+      imagem: {
+        hero: string;
+        alt: string;
+        credito: string;
+      };
+      conteudo: string;
+      tags: string[];
+      seo: {
+        meta_titulo: string;
+        meta_descricao: string;
+      };
+    }>;
+  } | null;
 }
 
 const NoticiasAI = () => {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [generatedContent, setGeneratedContent] = useState<GeneratedContent>({
     cadastroManual: null,
@@ -45,6 +67,9 @@ const NoticiasAI = () => {
   const [activeTab, setActiveTab] = useState("cadastro");
   const imageInputRef = useRef<HTMLInputElement>(null);
 
+  const createArticle = useCreateArticle();
+  const { data: categories } = useCategories();
+
   const detectInputType = (text: string): "EXCLUSIVA" | "CADASTRO_MANUAL" | "JSON" | "LINK" | "TEXT" => {
     const trimmed = text.trim().toUpperCase();
     if (trimmed.startsWith("EXCLUSIVA")) return "EXCLUSIVA";
@@ -52,6 +77,79 @@ const NoticiasAI = () => {
     if (trimmed.startsWith("JSON")) return "JSON";
     if (text.trim().startsWith("http://") || text.trim().startsWith("https://")) return "LINK";
     return "TEXT";
+  };
+
+  const findCategoryId = (categoryName: string): string | null => {
+    if (!categories || !categoryName) return null;
+    
+    const normalizedName = categoryName.toLowerCase().trim();
+    const found = categories.find(
+      cat => cat.name.toLowerCase() === normalizedName || cat.slug.toLowerCase() === normalizedName
+    );
+    
+    // Fallback to "Geral" if not found
+    if (!found) {
+      const geral = categories.find(cat => cat.name.toLowerCase() === "geral");
+      return geral?.id || null;
+    }
+    
+    return found.id;
+  };
+
+  const handleImportNews = async () => {
+    const jsonData = generatedContent.json;
+    if (!jsonData?.noticias?.length) {
+      toast.error("Nenhuma notícia para importar");
+      return;
+    }
+
+    setIsImporting(true);
+    let successCount = 0;
+    let errorCount = 0;
+
+    try {
+      for (const noticia of jsonData.noticias) {
+        try {
+          const categoryId = findCategoryId(noticia.categoria);
+          
+          await createArticle.mutateAsync({
+            title: noticia.titulo,
+            slug: noticia.slug,
+            excerpt: noticia.resumo,
+            content: noticia.conteudo,
+            category_id: categoryId,
+            featured_image: noticia.imagem?.hero || null,
+            featured_image_alt: noticia.imagem?.alt || null,
+            featured_image_credit: noticia.imagem?.credito || null,
+            source_url: noticia.fonte || null,
+            meta_title: noticia.seo?.meta_titulo || null,
+            meta_description: noticia.seo?.meta_descricao || null,
+            tags: noticia.tags || [],
+            status: "published",
+            published_at: new Date().toISOString(),
+          });
+          
+          successCount++;
+        } catch (err) {
+          console.error("Erro ao importar notícia:", noticia.titulo, err);
+          errorCount++;
+        }
+      }
+
+      if (successCount > 0) {
+        toast.success(`${successCount} notícia(s) importada(s) com sucesso!`);
+        handleClear();
+      }
+      
+      if (errorCount > 0) {
+        toast.error(`${errorCount} notícia(s) falharam na importação`);
+      }
+    } catch (error) {
+      console.error("Erro geral na importação:", error);
+      toast.error("Erro ao importar notícias");
+    } finally {
+      setIsImporting(false);
+    }
   };
 
   const handleGenerate = async () => {
@@ -207,10 +305,30 @@ const NoticiasAI = () => {
     if (!data) return <p className="text-muted-foreground text-center py-8">Nenhum JSON gerado ainda.</p>;
 
     const jsonString = JSON.stringify(data, null, 2);
+    const hasNoticias = data.noticias && data.noticias.length > 0;
 
     return (
       <div className="space-y-4">
-        <div className="flex justify-end">
+        <div className="flex justify-end gap-2">
+          {hasNoticias && (
+            <Button
+              size="sm"
+              onClick={handleImportNews}
+              disabled={isImporting}
+            >
+              {isImporting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Importando...
+                </>
+              ) : (
+                <>
+                  <Download className="h-4 w-4 mr-2" />
+                  Importar Notícias
+                </>
+              )}
+            </Button>
+          )}
           <Button
             variant="outline"
             size="sm"
