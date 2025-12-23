@@ -22,6 +22,7 @@ export const Header02: React.FC = () => {
     { name: 'JUSTIÇA', path: '/categoria/justica' },
     { name: 'POLÍTICA', path: '/categoria/politica' },
     { name: 'SAÚDE', path: '/categoria/saude' },
+    { name: 'WEB STORIES', path: '/web-stories', color: 'text-purple-500' },
   ];
 
   const isActive = (path: string) => {

@@ -31,6 +31,7 @@ const Header = () => {
     { name: "Justiça", path: "/categoria/justica" },
     { name: "Política", path: "/categoria/politica" },
     { name: "Saúde", path: "/categoria/saude" },
+    { name: "Web Stories", path: "/web-stories" },
   ];
 
   const isActive = (path: string) => location.pathname === path;
