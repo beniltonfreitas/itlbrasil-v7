@@ -15,7 +15,7 @@ import { useCopyProtection } from "@/hooks/useCopyProtection";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Link } from "react-router-dom";
-import { AudioPlayer } from "@/components/AudioPlayer";
+import { AudioPlayerNative } from "@/components/AudioPlayerNative";
 import { ImageGallery } from "@/components/ImageGallery";
 import { SafeHTML } from "@/components/SafeHTML";
 import { WhatsAppCTA } from "@/components/WhatsAppCTA";
@@ -210,7 +210,7 @@ const ArticleComplete = () => {
             {/* 6. Player de áudio (OBRIGATÓRIO - estilo Agência Brasil) */}
             {/* Posicionado IMEDIATAMENTE após a imagem principal */}
             {/* e ANTES de qualquer parágrafo de texto */}
-            <AudioPlayer
+            <AudioPlayerNative
               title={article.title}
               content={article.content}
               excerpt={article.excerpt}
