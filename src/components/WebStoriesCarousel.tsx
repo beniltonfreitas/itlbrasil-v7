@@ -38,7 +38,7 @@ export const WebStoriesCarousel: React.FC = () => {
         dragFree: true,
       }}
       plugins={[autoplayPlugin.current]}
-      className="w-full max-w-[400px]"
+      className="w-full"
     >
       <CarouselContent className="-ml-1">
         {stories.map((story) => (
