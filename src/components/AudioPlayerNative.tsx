@@ -18,7 +18,6 @@ export const AudioPlayerNative: React.FC<AudioPlayerNativeProps> = ({
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [hasRequested, setHasRequested] = useState(false);
 
   // Process text for TTS
   const processedText = useMemo(() => {
@@ -40,80 +39,61 @@ export const AudioPlayerNative: React.FC<AudioPlayerNativeProps> = ({
     };
   }, [audioUrl]);
 
-  const generateAudio = async () => {
-    if (isLoading || audioUrl) return;
+  // Auto-generate audio on mount
+  useEffect(() => {
+    const generateAudio = async () => {
+      if (isLoading || audioUrl) return;
 
-    setIsLoading(true);
-    setError(null);
-    setHasRequested(true);
+      setIsLoading(true);
+      setError(null);
 
-    try {
-      const response = await fetch(
-        'https://kzbseckjublnjrxzktux.supabase.co/functions/v1/text-to-speech',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6YnNlY2tqdWJsbmpyeHprdHV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg3MzM2MzksImV4cCI6MjA3NDMwOTYzOX0.bmMbndzkIZRoiarRcoSMRrHYdVLqRkYYRUtofiYXOPE',
-          },
-          body: JSON.stringify({
-            text: processedText,
-            voice: 'alloy', // Neutral voice for news
-          }),
+      try {
+        const response = await fetch(
+          'https://kzbseckjublnjrxzktux.supabase.co/functions/v1/text-to-speech',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6YnNlY2tqdWJsbmpyeHprdHV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg3MzM2MzksImV4cCI6MjA3NDMwOTYzOX0.bmMbndzkIZRoiarRcoSMRrHYdVLqRkYYRUtofiYXOPE',
+            },
+            body: JSON.stringify({
+              text: processedText,
+              voice: 'alloy',
+            }),
+          }
+        );
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || `Erro ao gerar áudio: ${response.status}`);
         }
-      );
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `Erro ao gerar áudio: ${response.status}`);
+        const audioBlob = await response.blob();
+        const url = URL.createObjectURL(audioBlob);
+        setAudioUrl(url);
+      } catch (err) {
+        console.error('Erro ao gerar áudio:', err);
+        setError(err instanceof Error ? err.message : 'Erro ao gerar áudio');
+      } finally {
+        setIsLoading(false);
       }
+    };
 
-      const audioBlob = await response.blob();
-      const url = URL.createObjectURL(audioBlob);
-      setAudioUrl(url);
-    } catch (err) {
-      console.error('Erro ao gerar áudio:', err);
-      setError(err instanceof Error ? err.message : 'Erro ao gerar áudio');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    generateAudio();
+  }, [processedText]);
 
   return (
-    <div 
-      className={className}
-      style={{
-        margin: '16px 0 24px 0',
-        padding: '12px 16px',
-        border: '1px solid #e5e7eb',
-        background: '#ffffff',
-      }}
-    >
+    <div className={className}>
       <p style={{ 
         fontSize: '14px', 
-        fontWeight: 600, 
-        marginBottom: '6px', 
-        color: '#111827' 
+        fontWeight: 500, 
+        marginBottom: '8px', 
+        color: '#374151' 
       }}>
         Versão em áudio
       </p>
 
-      {!hasRequested ? (
-        <button
-          onClick={generateAudio}
-          style={{
-            padding: '8px 16px',
-            background: '#f3f4f6',
-            border: '1px solid #d1d5db',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            fontSize: '14px',
-            color: '#374151',
-          }}
-        >
-          Clique para gerar áudio
-        </button>
-      ) : isLoading ? (
+      {isLoading ? (
         <div style={{ 
           display: 'flex', 
           alignItems: 'center', 
@@ -127,25 +107,16 @@ export const AudioPlayerNative: React.FC<AudioPlayerNativeProps> = ({
       ) : error ? (
         <div style={{ color: '#dc2626', fontSize: '14px' }}>
           {error}
-          <button
-            onClick={generateAudio}
-            style={{
-              marginLeft: '12px',
-              padding: '4px 12px',
-              background: '#f3f4f6',
-              border: '1px solid #d1d5db',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontSize: '13px',
-            }}
-          >
-            Tentar novamente
-          </button>
         </div>
       ) : audioUrl ? (
         <audio 
           controls 
-          style={{ width: '100%' }}
+          controlsList="nodownload"
+          style={{ 
+            width: '100%',
+            height: '30px',
+            borderRadius: '20px',
+          }}
           preload="metadata"
         >
           <source src={audioUrl} type="audio/mpeg" />
