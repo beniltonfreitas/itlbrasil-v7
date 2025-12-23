@@ -56,6 +56,9 @@ verify_jwt = true
 [functions.rewrite-article]
 verify_jwt = true
 
+[functions.text-to-speech]
+verify_jwt = false
+
 # Cron job for reporter-worker: Run every 2 minutes
 [cron."reporter-worker"]
 schedule = "*/2 * * * *"
