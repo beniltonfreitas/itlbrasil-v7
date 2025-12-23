@@ -180,7 +180,7 @@ const normalizeNoticia = (noticia: any) => {
 
   const seoMetaTitulo = truncate(String(noticia?.seo?.meta_titulo ?? titulo), 60);
   const seoMetaDescricao = truncate(
-    String(noticia?.seo?.meta_descricao ?? resumo || ""),
+    String(noticia?.seo?.meta_descricao ?? (resumo || "")),
     160,
   );
 
@@ -415,10 +415,13 @@ REGRA ESPECIAL - JSON/LINK:
       throw new Error("Erro ao interpretar resposta da IA");
     }
 
+    // Normalize output to match "Importar em Massa" format
+    const normalizedOutput = normalizeOutputForImport(parsedContent, inputType);
+
     console.log("[noticias-ai] Successfully processed request");
 
     return new Response(
-      JSON.stringify(parsedContent),
+      JSON.stringify(normalizedOutput),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
 
