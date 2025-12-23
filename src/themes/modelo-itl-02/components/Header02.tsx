@@ -5,6 +5,7 @@ import { InfoBar } from '@/components/widgets/InfoBar';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { WebStoriesCarousel } from '@/components/WebStoriesCarousel';
+import logoItlBrasil from '@/assets/logo-itl-brasil.png';
 
 export const Header02: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -54,24 +55,16 @@ export const Header02: React.FC = () => {
 
       {/* Main Header - White */}
       <div className="bg-white border-b border-gray-200">
-        <div className="container mx-auto px-4 py-4">
+        <div className="container mx-auto px-4 py-2">
           <div className="flex items-center justify-between gap-4">
-            {/* Logo */}
-            <div className="flex-shrink-0">
-              <Link to="/" className="flex items-center gap-3">
+            {/* Logo - 450x150 area */}
+            <div className="flex-shrink-0" style={{ width: '450px', height: '150px' }}>
+              <Link to="/" className="flex items-center h-full">
                 <img 
-                  src="/Logo_ITL.png" 
-                  alt="Instituto Tribuna Livre" 
-                  className="h-12 w-auto"
+                  src={logoItlBrasil} 
+                  alt="ITL Brasil" 
+                  className="h-full w-auto object-contain"
                 />
-                <div className="hidden sm:block">
-                  <div className="text-2xl font-bold text-blue-600">
-                    Instituto Tribuna Livre
-                  </div>
-                  <div className="text-xs text-gray-600">
-                    Jornalismo de Qualidade
-                  </div>
-                </div>
               </Link>
             </div>
 
@@ -80,18 +73,18 @@ export const Header02: React.FC = () => {
               <WebStoriesCarousel />
             </div>
 
-            {/* Search Bar - Desktop */}
-            <div className="hidden md:flex w-full max-w-sm flex-shrink-0 justify-end">
+            {/* Search Bar - Desktop (smaller) */}
+            <div className="hidden md:flex w-48 flex-shrink-0 justify-end">
               <form onSubmit={handleSearch} className="flex w-full">
                 <Input
                   type="text"
-                  placeholder="Buscar notícias..."
+                  placeholder="Buscar..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="rounded-r-none"
+                  className="rounded-r-none text-sm h-9"
                 />
-                <Button type="submit" size="sm" className="rounded-l-none">
-                  <Search size={16} />
+                <Button type="submit" size="sm" className="rounded-l-none h-9 px-2">
+                  <Search size={14} />
                 </Button>
               </form>
             </div>
