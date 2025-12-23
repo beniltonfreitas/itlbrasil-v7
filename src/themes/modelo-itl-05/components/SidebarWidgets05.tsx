@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LiveStreamWidget } from '@/components/widgets/LiveStreamWidget';
-
+import { WebStoriesWidget } from '@/components/widgets/WebStoriesWidget';
 import { NewsletterSignup } from '@/components/NewsletterSignup';
 import { useArticles } from '@/hooks/useArticles';
 import { Link } from 'react-router-dom';
@@ -12,6 +12,8 @@ export const SidebarWidgets05: React.FC = () => {
 
   return (
     <aside className="space-y-6">
+      {/* Web Stories Widget */}
+      <WebStoriesWidget />
       {/* Newsletter */}
       <Card className="shadow-lg">
         <CardHeader className="bg-primary text-primary-foreground">
