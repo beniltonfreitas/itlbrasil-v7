@@ -31,11 +31,17 @@ serve(async (req) => {
 
 REGRAS GERAIS:
 - Resumo: máximo 160 caracteres
-- Meta Título: máximo 60 caracteres
+- Meta Título: máximo 60 caracteres  
 - Meta Descrição: máximo 160 caracteres
-- Slug: formato kebab-case sem acentos
-- Conteúdo: texto puro, SEM HTML
-- Categoria: uma das seguintes: Política, Economia, Brasil, Mundo, Esportes, Entretenimento, Tecnologia, Saúde, Educação, Meio Ambiente, Ciência, Cultura, Geral
+- Slug: formato kebab-case sem acentos (apenas letras minúsculas, números e hífens)
+- Categoria: DEVE ser exatamente uma das seguintes: "Últimas Notícias", "Justiça", "Política", "Economia", "Educação", "Internacional", "Meio Ambiente", "Direitos Humanos", "Cultura", "Esportes", "Saúde", "Geral"
+
+IMPORTANTE PARA O JSON (formato Importar em Massa):
+- "fonte": DEVE ser uma URL válida começando com https:// (ex: "https://agenciabrasil.ebc.com.br/...")
+  Se não houver URL de fonte, use: "https://itlbrasil.com"
+- "conteudo": DEVE ser formatado em HTML com parágrafos <p>...</p>. Cada parágrafo deve estar dentro de tags <p>.
+- "tags": DEVE ter EXATAMENTE 12 tags relevantes (não mais, não menos). Cada tag com máximo 40 caracteres.
+- "imagem": DEVE ser um objeto com hero, og, card (URLs HTTPS), alt (5-140 chars) e credito
 
 FORMATO DE RESPOSTA JSON:
 {
@@ -43,11 +49,11 @@ FORMATO DE RESPOSTA JSON:
     "titulo": "string",
     "slug": "string",
     "resumo": "string (max 160 chars)",
-    "categoria": "string",
-    "fonte": "string",
+    "categoria": "string (uma das categorias válidas)",
+    "fonte": "string (nome da fonte)",
     "imagens": {
       "hero": "URL ou descrição",
-      "og": "URL ou descrição",
+      "og": "URL ou descrição", 
       "card": "URL ou descrição"
     },
     "textoAlternativo": "string",
@@ -61,23 +67,23 @@ FORMATO DE RESPOSTA JSON:
   },
   "json": {
     "noticias": [{
-      "categoria": "string",
-      "titulo": "string",
-      "slug": "string",
-      "resumo": "string",
-      "conteudo": "string",
-      "fonte": "string",
+      "categoria": "string (DEVE ser uma das categorias válidas: Últimas Notícias, Justiça, Política, Economia, Educação, Internacional, Meio Ambiente, Direitos Humanos, Cultura, Esportes, Saúde, Geral)",
+      "titulo": "string (6-120 chars)",
+      "slug": "string (kebab-case, letras minúsculas, números e hífens)",
+      "resumo": "string (max 160 chars)",
+      "conteudo": "string (HTML com parágrafos <p>)</p>",
+      "fonte": "URL HTTPS válida (ex: https://agenciabrasil.ebc.com.br/...)",
       "imagem": {
-        "hero": "string",
-        "og": "string",
-        "card": "string",
-        "alt": "string",
-        "credito": "string"
+        "hero": "URL HTTPS da imagem principal",
+        "og": "URL HTTPS para compartilhamento",
+        "card": "URL HTTPS para cards",
+        "alt": "texto alternativo (5-140 chars)",
+        "credito": "crédito da imagem"
       },
-      "tags": ["tag1", "tag2"],
+      "tags": ["EXATAMENTE 12 tags relevantes"],
       "seo": {
-        "meta_titulo": "string",
-        "meta_descricao": "string"
+        "meta_titulo": "string (max 60 chars)",
+        "meta_descricao": "string (max 160 chars)"
       }
     }]
   }
