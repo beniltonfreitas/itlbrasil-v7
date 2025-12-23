@@ -35,13 +35,13 @@ const WebStoriesManager = () => {
     await deleteMutation.mutateAsync(id);
   };
 
-  const handleTogglePublish = async (id: string, currentStatus: 'rascunho' | 'publicado') => {
-    const newStatus = currentStatus === 'publicado' ? 'rascunho' : 'publicado';
+  const handleTogglePublish = async (id: string, currentStatus: 'draft' | 'published') => {
+    const newStatus = currentStatus === 'published' ? 'draft' : 'published';
     await togglePublishMutation.mutateAsync({ id, status: newStatus });
   };
 
-  const getStatusBadge = (status: 'rascunho' | 'publicado') => {
-    if (status === 'publicado') {
+  const getStatusBadge = (status: 'draft' | 'published') => {
+    if (status === 'published') {
       return <Badge className="bg-green-100 text-green-800">Publicado</Badge>;
     }
     return <Badge variant="secondary">Rascunho</Badge>;
@@ -133,7 +133,7 @@ const WebStoriesManager = () => {
                         onClick={() => handleTogglePublish(story.id, story.status)}
                         disabled={togglePublishMutation.isPending}
                       >
-                        {story.status === 'publicado' ? (
+                        {story.status === 'published' ? (
                           <EyeOff className="h-4 w-4" />
                         ) : (
                           <Eye className="h-4 w-4" />

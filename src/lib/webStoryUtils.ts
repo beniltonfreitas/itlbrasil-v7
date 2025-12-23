@@ -70,7 +70,7 @@ export async function createWebStoryFromArticle(articleId: string): Promise<bool
         title: article.title,
         slug,
         cover_image: article.featured_image,
-        status: 'publicado', // Publicar automaticamente junto com o artigo
+        status: 'published', // Publicar automaticamente junto com o artigo
         author_id: article.author_id || DEFAULT_AUTHOR_ID,
         meta_description: article.meta_description || article.excerpt,
         meta_keywords: Array.isArray(article.meta_keywords) ? article.meta_keywords : null,

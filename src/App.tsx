@@ -66,6 +66,9 @@ import JornalistaProTools from "./pages/admin/JornalistaProTools";
 import StudioPlaceholder from "./pages/admin/StudioPlaceholder";
 import AutoPostManager from "./pages/admin/AutoPostManager";
 import WebStoriesManager from "./pages/admin/WebStoriesManager";
+import WebStoryEditor from "./pages/admin/WebStoryEditor";
+import WebStoriesPublicList from "./pages/WebStoriesPublicList";
+import WebStoryReader from "./pages/WebStoryReader";
 import RSSImportManager from "./pages/admin/RSSImportManager";
 import AccessibilitySettings from "./pages/admin/AccessibilitySettings";
 import NFSeManager from "./pages/admin/NFSeManager";
@@ -111,6 +114,10 @@ const PublicRoutes = () => {
       <Route path="/jornal" element={<ThemedPageWrapper><EditionsListPublic /></ThemedPageWrapper>} />
       <Route path="/jornal/edicao/:slug/ler" element={<EditionReader />} />
       <Route path="/jornal/edicao/:slug/flip" element={<EditionFlipbook />} />
+      
+      {/* Web Stories public routes */}
+      <Route path="/web-stories" element={<ThemedPageWrapper><WebStoriesPublicList /></ThemedPageWrapper>} />
+      <Route path="/web-stories/:slug" element={<WebStoryReader />} />
       
       {/* Category routes */}
       <Route path="/categoria/:slug" element={<ThemedPageWrapper><Category /></ThemedPageWrapper>} />
@@ -204,8 +211,8 @@ const AdminRoutes = () => {
         
         {/* WebStories Routes */}
         <Route path="webstories" element={<WebStoriesManager />} />
-        <Route path="webstories/new" element={<WebStoriesManager />} />
-        <Route path="webstories/:id/edit" element={<WebStoriesManager />} />
+        <Route path="webstories/new" element={<WebStoryEditor />} />
+        <Route path="webstories/:id/edit" element={<WebStoryEditor />} />
         
         {/* Reporter AI Routes */}
         <Route path="reporter-ai" element={<ReporterAI />} />
