@@ -7,6 +7,238 @@ const corsHeaders = {
 
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
+const DEFAULT_FONTE_URL = "https://itlbrasil.com";
+const VALID_CATEGORIES = [
+  "Últimas Notícias",
+  "Justiça",
+  "Política",
+  "Economia",
+  "Educação",
+  "Internacional",
+  "Meio Ambiente",
+  "Direitos Humanos",
+  "Cultura",
+  "Esportes",
+  "Saúde",
+  "Geral",
+] as const;
+
+type ValidCategory = (typeof VALID_CATEGORIES)[number];
+
+const stripDiacritics = (value: string) =>
+  value.normalize("NFD").replace(/\p{Diacritic}/gu, "");
+
+const toKebabCase = (value: string) => {
+  const base = stripDiacritics(value)
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .replace(/-{2,}/g, "-");
+  return base;
+};
+
+const truncate = (value: string, max: number) => {
+  const text = String(value ?? "").trim();
+  if (text.length <= max) return text;
+  if (max <= 1) return text.slice(0, max);
+  return text.slice(0, max - 1).trimEnd() + "…";
+};
+
+const isHttpsUrl = (value: string) => {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:";
+  } catch {
+    return false;
+  }
+};
+
+const escapeHtml = (text: string) =>
+  text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+
+const ensureHtmlParagraphs = (content: string) => {
+  const c = String(content ?? "").trim();
+  if (!c) return "";
+
+  // If it already looks like HTML, keep it.
+  if (/<\/?(p|h2|h3|blockquote|ul|ol|li|strong|em|br)\b/i.test(c)) return c;
+
+  // Otherwise, wrap plain-text paragraphs.
+  const paragraphs = c
+    .split(/\n{2,}|\r\n{2,}/)
+    .map((p) => p.replace(/\s+/g, " ").trim())
+    .filter(Boolean);
+
+  return paragraphs.map((p) => `<p>${escapeHtml(p)}</p>`).join("");
+};
+
+const normalizeTags = (tags: unknown, title: string, category: string) => {
+  const raw = Array.isArray(tags)
+    ? tags
+    : typeof tags === "string"
+      ? tags.split(",")
+      : [];
+
+  const cleaned = raw
+    .map((t) => String(t ?? "").trim())
+    .filter(Boolean)
+    .map((t) => truncate(t, 40));
+
+  const unique: string[] = [];
+  for (const t of cleaned) if (!unique.includes(t)) unique.push(t);
+
+  const fallback = [
+    category,
+    "ITL Brasil",
+    "Notícias",
+    "Brasil",
+    "Atualidades",
+    "Jornalismo",
+    "Política",
+    "Economia",
+    "Sociedade",
+    "Serviço público",
+    "Educação",
+    "Governo",
+  ].map((t) => truncate(t, 40));
+
+  for (const t of fallback) {
+    if (unique.length >= 12) break;
+    if (!unique.includes(t)) unique.push(t);
+  }
+
+  while (unique.length < 12) unique.push(truncate(`Tag ${unique.length + 1}`, 40));
+
+  return unique.slice(0, 12);
+};
+
+type ImageObj = { hero: string; og: string; card: string; alt: string; credito: string };
+
+const normalizeImage = (image: unknown, fallbackTitle: string, fallbackCredit?: string): ImageObj => {
+  const defaultAlt = truncate(fallbackTitle || "Imagem da notícia", 140);
+  const defaultCredit = String(fallbackCredit ?? "ITL Brasil").trim() || "ITL Brasil";
+
+  if (typeof image === "string") {
+    const url = image.trim();
+    const safeUrl = isHttpsUrl(url) ? url : "";
+    return {
+      hero: safeUrl,
+      og: safeUrl,
+      card: safeUrl,
+      alt: defaultAlt.length >= 5 ? defaultAlt : "Imagem da notícia",
+      credito: defaultCredit.length >= 2 ? defaultCredit : "ITL Brasil",
+    };
+  }
+
+  if (image && typeof image === "object") {
+    const obj = image as Record<string, unknown>;
+    const hero = String(obj.hero ?? "").trim();
+    const og = String(obj.og ?? hero).trim();
+    const card = String(obj.card ?? hero).trim();
+    const alt = truncate(String(obj.alt ?? defaultAlt), 140);
+    const credito = String(obj.credito ?? fallbackCredit ?? defaultCredit).trim();
+
+    return {
+      hero: isHttpsUrl(hero) ? hero : "",
+      og: isHttpsUrl(og) ? og : "",
+      card: isHttpsUrl(card) ? card : "",
+      alt: alt.length >= 5 ? alt : defaultAlt,
+      credito: credito.length >= 2 ? credito : defaultCredit,
+    };
+  }
+
+  return {
+    hero: "",
+    og: "",
+    card: "",
+    alt: defaultAlt.length >= 5 ? defaultAlt : "Imagem da notícia",
+    credito: defaultCredit.length >= 2 ? defaultCredit : "ITL Brasil",
+  };
+};
+
+const normalizeCategory = (value: unknown): ValidCategory => {
+  const text = String(value ?? "").trim();
+  if ((VALID_CATEGORIES as readonly string[]).includes(text)) return text as ValidCategory;
+  return "Geral";
+};
+
+const normalizeNoticia = (noticia: any) => {
+  const titulo = truncate(String(noticia?.titulo ?? ""), 120) || "(Sem título)";
+  const categoria = normalizeCategory(noticia?.categoria);
+  const slug = toKebabCase(String(noticia?.slug ?? titulo)) || toKebabCase(titulo) || "noticia";
+  const resumo = truncate(String(noticia?.resumo ?? ""), 160);
+  const conteudo = ensureHtmlParagraphs(String(noticia?.conteudo ?? ""));
+
+  const fonteRaw = String(noticia?.fonte ?? "").trim();
+  const fonte = isHttpsUrl(fonteRaw) ? fonteRaw : DEFAULT_FONTE_URL;
+
+  const seoMetaTitulo = truncate(String(noticia?.seo?.meta_titulo ?? titulo), 60);
+  const seoMetaDescricao = truncate(
+    String(noticia?.seo?.meta_descricao ?? resumo || ""),
+    160,
+  );
+
+  const tags = normalizeTags(noticia?.tags, titulo, categoria);
+
+  const imagem = normalizeImage(
+    noticia?.imagem,
+    titulo,
+    noticia?.imagem_credito ?? noticia?.credito ?? noticia?.imagem?.credito,
+  );
+
+  // Preserve optional flags/fields if present
+  const featured = typeof noticia?.featured === "boolean" ? noticia.featured : undefined;
+  const imagens_adicionais = Array.isArray(noticia?.imagens_adicionais)
+    ? noticia.imagens_adicionais
+        .map((u: any) => String(u ?? "").trim())
+        .filter((u: string) => u && (u.startsWith("http://") || u.startsWith("https://")))
+        .slice(0, 10)
+    : undefined;
+
+  return {
+    categoria,
+    titulo,
+    slug,
+    resumo,
+    conteudo,
+    fonte,
+    imagem,
+    ...(imagens_adicionais && imagens_adicionais.length ? { imagens_adicionais } : {}),
+    ...(featured !== undefined ? { featured } : {}),
+    tags,
+    seo: {
+      meta_titulo: seoMetaTitulo,
+      meta_descricao: seoMetaDescricao,
+    },
+  };
+};
+
+const normalizeOutputForImport = (payload: any, inputType: string) => {
+  const out = payload && typeof payload === "object" ? { ...payload } : {};
+
+  // Enforce output shape according to requested mode.
+  if (inputType === "CADASTRO_MANUAL") {
+    out.json = null;
+  }
+  if (inputType === "JSON" || inputType === "LINK") {
+    out.cadastroManual = null;
+  }
+
+  if (out?.json?.noticias && Array.isArray(out.json.noticias)) {
+    out.json = {
+      noticias: out.json.noticias.map((n: any) => normalizeNoticia(n)),
+    };
+  }
+
+  return out;
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
