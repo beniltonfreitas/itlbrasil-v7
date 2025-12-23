@@ -11,7 +11,7 @@ import Autoplay from 'embla-carousel-autoplay';
 
 export const WebStoriesCarousel: React.FC = () => {
   const { data: stories, isLoading } = usePublicWebStories(12);
-  
+
   const autoplayPlugin = React.useRef(
     Autoplay({ delay: 4000, stopOnInteraction: false, stopOnMouseEnter: true })
   );
@@ -42,17 +42,14 @@ export const WebStoriesCarousel: React.FC = () => {
     >
       <CarouselContent className="-ml-1">
         {stories.map((story) => (
-          <CarouselItem
-            key={story.id}
-            className="pl-1 basis-auto"
-          >
+          <CarouselItem key={story.id} className="pl-1 basis-auto">
             <Link
               to={`/web-stories/${story.slug}`}
               className="block group"
+              aria-label={`Web story: ${story.title}`}
             >
-              {/* Circular Image with Gradient Border */}
-              <div className="relative p-[2px] rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600">
-                <div className="w-14 h-14 rounded-full overflow-hidden bg-white p-[2px]">
+              <div className="relative p-[2px] rounded-full bg-[linear-gradient(135deg,hsl(var(--story-1)),hsl(var(--story-2)),hsl(var(--story-3)))]">
+                <div className="w-14 h-14 rounded-full overflow-hidden bg-background p-[2px]">
                   <div className="w-full h-full rounded-full overflow-hidden bg-muted">
                     {story.cover_image ? (
                       <img
@@ -62,8 +59,8 @@ export const WebStoriesCarousel: React.FC = () => {
                         loading="lazy"
                       />
                     ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center">
-                        <span className="text-white text-lg font-bold">
+                      <div className="w-full h-full bg-[linear-gradient(135deg,hsl(var(--story-2)),hsl(var(--story-3)))] flex items-center justify-center">
+                        <span className="text-[hsl(var(--story-foreground))] text-lg font-bold">
                           {story.title.charAt(0)}
                         </span>
                       </div>
