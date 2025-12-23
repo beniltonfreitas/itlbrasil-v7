@@ -113,11 +113,18 @@ const ArticleComplete = () => {
 
             {/* 2. Título principal (H1) */}
             <header className="mb-6">
-              <h1 className="text-3xl md:text-4xl font-bold text-foreground leading-tight mb-4">
+              <h1 className="text-3xl md:text-4xl lg:text-[2.5rem] font-bold text-foreground leading-tight mb-3">
                 {article.title}
               </h1>
               
-              {/* 3. Metadados (data, autor/editoria, compartilhamento) */}
+              {/* 3. Subtítulo (H2 ou p.subtitle) - se houver excerpt */}
+              {article.excerpt && (
+                <p className="text-lg md:text-xl text-muted-foreground leading-relaxed mb-4 font-normal">
+                  {article.excerpt}
+                </p>
+              )}
+              
+              {/* 4. Metadados (data, autor/editoria, compartilhamento) */}
               <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground mb-4">
                 <time dateTime={article.published_at || article.created_at}>
                   {format(new Date(article.published_at || article.created_at), "d 'de' MMMM 'de' yyyy, HH:mm", { locale: ptBR })}
@@ -179,23 +186,28 @@ const ArticleComplete = () => {
               </div>
             </header>
 
-            {/* 4. Imagem principal (Hero) + Legenda */}
+            {/* 5. Imagem principal (Hero) - Proporção 16:9 */}
             {article.featured_image && (
               <figure className="mb-6">
-                <img
-                  src={article.featured_image}
-                  alt={(article as any).featured_image_alt || article.title}
-                  className="w-full h-auto object-cover"
-                />
+                <div className="aspect-video w-full overflow-hidden rounded-lg">
+                  <img
+                    src={article.featured_image}
+                    alt={(article as any).featured_image_alt || article.title}
+                    className="w-full h-full object-cover"
+                    loading="eager"
+                  />
+                </div>
                 {((article as any).featured_image_credit || (article as any).image_credit) && (
-                  <figcaption className="text-sm text-muted-foreground mt-2 text-left">
+                  <figcaption className="text-sm text-muted-foreground mt-2 text-right">
                     Foto: {(article as any).featured_image_credit || (article as any).image_credit}
                   </figcaption>
                 )}
               </figure>
             )}
 
-            {/* 5. Player de áudio (estilo Agência Brasil) */}
+            {/* 6. Player de áudio (OBRIGATÓRIO - estilo Agência Brasil) */}
+            {/* Posicionado IMEDIATAMENTE após a imagem principal */}
+            {/* e ANTES de qualquer parágrafo de texto */}
             <AudioPlayer
               title={article.title}
               content={article.content}
@@ -203,7 +215,8 @@ const ArticleComplete = () => {
               className="mb-8"
             />
 
-            {/* 6. Corpo do texto (conteúdo editorial) */}
+            {/* 7. Corpo do texto (conteúdo editorial) */}
+            {/* O primeiro parágrafo começa logo abaixo do player */}
             <div className="article-content prose prose-lg max-w-none text-foreground
               [&>h2]:text-xl [&>h2]:font-bold [&>h2]:mt-8 [&>h2]:mb-4 [&>h2]:text-foreground
               [&>h3]:text-lg [&>h3]:font-semibold [&>h3]:mt-6 [&>h3]:mb-3
