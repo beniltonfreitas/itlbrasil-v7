@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { FinancialWidget } from '@/components/widgets/FinancialWidget';
 import { WeatherWidget } from '@/components/widgets/WeatherWidget';
-import { useSiteSettings } from '@/hooks/useSiteSettings';
+import { WebStoriesCarousel } from '@/components/WebStoriesCarousel';
+import logoItlBrasil from '@/assets/logo-itl-brasil.png';
 
 const categories = [
   { name: 'Últimas Notícias', slug: 'ultimas-noticias' },
@@ -24,7 +25,6 @@ export const Header05: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const location = useLocation();
-  const { settings } = useSiteSettings();
 
   const isActive = (slug: string) => location.pathname.includes(slug);
 
@@ -48,40 +48,39 @@ export const Header05: React.FC = () => {
       </div>
 
       {/* Main Header */}
-      <div className="container mx-auto px-4 py-4">
-        <div className="flex items-center justify-between gap-6">
-          {/* Logo */}
-          <Link to="/" className="flex items-center gap-3 flex-shrink-0">
-            <img 
-              src={settings.logo_url || '/Logo_ITL.png'} 
-              alt={typeof settings.site_name === 'string' ? settings.site_name : 'Instituto Tribuna Livre'} 
-              className="h-12 object-contain"
-            />
-            <div className="flex flex-col">
-              <span className="text-2xl font-bold text-foreground leading-none">
-                {typeof settings.site_name === 'string' ? settings.site_name : 'Instituto Tribuna Livre'}
-              </span>
-              <span className="text-xs text-muted-foreground mt-0.5">
-                {typeof settings.site_tagline === 'string' ? settings.site_tagline : 'Jornalismo de Qualidade'}
-              </span>
-            </div>
-          </Link>
+      <div className="container mx-auto px-4 py-2">
+        <div className="flex items-center justify-between gap-4">
+          {/* Logo - 450x150 area */}
+          <div className="flex-shrink-0" style={{ width: '450px', height: '150px' }}>
+            <Link to="/" className="flex items-center h-full">
+              <img 
+                src={logoItlBrasil} 
+                alt="ITL Brasil" 
+                className="h-full w-auto object-contain"
+              />
+            </Link>
+          </div>
 
-          {/* Desktop Search */}
-          <form onSubmit={handleSearch} className="hidden lg:flex flex-1 max-w-md">
+          {/* Web Stories Carousel - Desktop */}
+          <div className="hidden lg:flex flex-1 justify-center overflow-hidden">
+            <WebStoriesCarousel />
+          </div>
+
+          {/* Desktop Search - Smaller */}
+          <form onSubmit={handleSearch} className="hidden lg:flex w-48 flex-shrink-0">
             <div className="relative w-full">
               <Input
                 type="search"
-                placeholder="Buscar notícias..."
+                placeholder="Buscar..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pr-10"
+                className="pr-10 text-sm h-9"
               />
               <Button 
                 type="submit" 
                 size="sm" 
                 variant="ghost" 
-                className="absolute right-1 top-1/2 -translate-y-1/2"
+                className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
               >
                 <Search className="h-4 w-4" />
               </Button>
