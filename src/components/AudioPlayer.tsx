@@ -82,29 +82,29 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
 
   return (
     <div 
-      className={`bg-muted/40 border border-border rounded-lg p-4 md:p-5 my-6 ${className}`}
+      className={`bg-white dark:bg-gray-50 border border-gray-200 dark:border-gray-300 rounded p-4 my-6 ${className}`}
       role="region"
       aria-label="Player de áudio da notícia"
     >
       {/* Header */}
-      <p className="text-sm font-medium text-muted-foreground mb-4">
+      <p className="text-xs font-medium text-gray-500 dark:text-gray-600 mb-3">
         Versão em áudio
       </p>
 
       {/* Player Controls */}
-      <div className="flex items-center gap-3 md:gap-4">
+      <div className="flex items-center gap-3">
         {/* Play/Pause Button */}
         <Button
           onClick={handlePlayPause}
-          variant="outline"
+          variant="ghost"
           size="icon"
-          className="h-11 w-11 rounded-full border-2 border-primary/20 hover:border-primary hover:bg-primary/5 flex-shrink-0"
+          className="h-10 w-10 rounded-full border border-gray-300 hover:bg-gray-100 dark:hover:bg-gray-200 flex-shrink-0"
           aria-label={isPlaying ? 'Pausar áudio' : isPaused ? 'Continuar áudio' : 'Reproduzir áudio'}
         >
           {isPlaying ? (
-            <Pause className="h-5 w-5 text-primary" />
+            <Pause className="h-4 w-4 text-gray-700" />
           ) : (
-            <Play className="h-5 w-5 text-primary ml-0.5" />
+            <Play className="h-4 w-4 text-gray-700 ml-0.5" />
           )}
         </Button>
 
@@ -124,7 +124,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
           />
           
           {/* Time Display */}
-          <div className="flex justify-between text-xs text-muted-foreground mt-1.5">
+          <div className="flex justify-between text-xs text-gray-500 mt-1">
             <span aria-label="Tempo decorrido">
               {formatTime(currentTime)}
             </span>
@@ -138,7 +138,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
         <div className="hidden md:flex items-center gap-2">
           <button
             onClick={() => setVolume(volume === 0 ? 1 : 0)}
-            className="text-muted-foreground hover:text-foreground transition-colors"
+            className="text-gray-500 hover:text-gray-700 transition-colors"
             aria-label={volume === 0 ? 'Ativar som' : 'Silenciar'}
           >
             {getVolumeIcon()}
