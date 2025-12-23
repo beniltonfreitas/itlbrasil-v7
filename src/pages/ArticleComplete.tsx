@@ -92,24 +92,20 @@ const ArticleComplete = () => {
         <article className="container mx-auto px-4 py-8">
           <div className="max-w-3xl mx-auto">
             
-            {/* 1. Breadcrumb (categoria/editoria) */}
-            <nav className="mb-4">
-              <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                <Link to="/" className="hover:text-primary transition-colors">Início</Link>
-                <span className="text-muted-foreground/60">/</span>
-                {article.category && (
-                  <>
-                    <Link 
-                      to={`/${article.category.slug}`} 
-                      className="hover:text-primary transition-colors font-medium uppercase text-xs tracking-wide"
-                      style={{ color: article.category.color || undefined }}
-                    >
-                      {article.category.name}
-                    </Link>
-                  </>
-                )}
-              </div>
-            </nav>
+            {/* 1. Categoria editorial (tag pequena colorida) */}
+            {article.category && (
+              <Link to={`/${article.category.slug}`} className="inline-block mb-4">
+                <Badge 
+                  className="text-xs uppercase tracking-wide font-medium px-3 py-1 hover:opacity-90 transition-opacity"
+                  style={{ 
+                    backgroundColor: article.category.color || 'hsl(var(--primary))', 
+                    color: 'white' 
+                  }}
+                >
+                  {article.category.name}
+                </Badge>
+              </Link>
+            )}
 
             {/* 2. Título principal (H1) */}
             <header className="mb-6">
@@ -124,8 +120,8 @@ const ArticleComplete = () => {
                 </p>
               )}
               
-              {/* 4. Metadados (data, autor/editoria, compartilhamento) */}
-              <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground mb-4">
+              {/* 4. Créditos editoriais (data, autor, local) */}
+              <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground mb-4">
                 <time dateTime={article.published_at || article.created_at}>
                   {format(new Date(article.published_at || article.created_at), "d 'de' MMMM 'de' yyyy, HH:mm", { locale: ptBR })}
                 </time>
@@ -133,12 +129,18 @@ const ArticleComplete = () => {
                 <span className="font-medium text-foreground/80">
                   Por {authorName}
                 </span>
+                {(article as any).location && (
+                  <>
+                    <span className="text-muted-foreground/40">|</span>
+                    <span>{(article as any).location}</span>
+                  </>
+                )}
                 {article.read_time && (
                   <>
                     <span className="text-muted-foreground/40">|</span>
                     <div className="flex items-center gap-1">
                       <Clock className="h-3.5 w-3.5" />
-                      <span>{article.read_time} min de leitura</span>
+                      <span>{article.read_time} min</span>
                     </div>
                   </>
                 )}
@@ -218,17 +220,19 @@ const ArticleComplete = () => {
             {/* 7. Corpo do texto (conteúdo editorial) */}
             {/* O primeiro parágrafo começa logo abaixo do player */}
             <div className="article-content prose prose-lg max-w-none text-foreground
-              [&>h2]:text-xl [&>h2]:font-bold [&>h2]:mt-8 [&>h2]:mb-4 [&>h2]:text-foreground
-              [&>h3]:text-lg [&>h3]:font-semibold [&>h3]:mt-6 [&>h3]:mb-3
-              [&>p]:mb-4 [&>p]:leading-relaxed [&>p]:text-base [&>p]:text-foreground/90
-              [&>ul]:mb-4 [&>ul]:pl-6 [&>ul]:list-disc
-              [&>ol]:mb-4 [&>ol]:pl-6 [&>ol]:list-decimal
+              [&>h2]:text-xl [&>h2]:font-bold [&>h2]:mt-10 [&>h2]:mb-4 [&>h2]:text-foreground
+              [&>h3]:text-lg [&>h3]:font-semibold [&>h3]:mt-8 [&>h3]:mb-3
+              [&>p]:mb-5 [&>p]:leading-relaxed [&>p]:text-base [&>p]:text-foreground/90
+              [&>ul]:mb-5 [&>ul]:pl-6 [&>ul]:list-disc
+              [&>ol]:mb-5 [&>ol]:pl-6 [&>ol]:list-decimal
               [&>li]:mb-2
-              [&>blockquote]:border-l-4 [&>blockquote]:border-primary [&>blockquote]:pl-4 [&>blockquote]:py-3 [&>blockquote]:my-6 [&>blockquote]:bg-muted/30 [&>blockquote]:italic [&>blockquote]:text-foreground/80
+              [&>blockquote]:border-l-4 [&>blockquote]:border-blue-500 [&>blockquote]:pl-6 [&>blockquote]:py-4 [&>blockquote]:my-8 [&>blockquote]:bg-slate-50 dark:[&>blockquote]:bg-slate-900/50 [&>blockquote]:italic [&>blockquote]:text-lg [&>blockquote]:text-foreground/85 [&>blockquote]:rounded-r-md
+              [&>blockquote>p]:mb-2 [&>blockquote>p]:last:mb-0
+              [&>blockquote>cite]:block [&>blockquote>cite]:text-sm [&>blockquote>cite]:not-italic [&>blockquote>cite]:font-medium [&>blockquote>cite]:text-muted-foreground [&>blockquote>cite]:mt-3
               [&>figure]:my-6 [&>figure>img]:w-full [&>figure>img]:h-auto
               [&>figure>figcaption]:text-sm [&>figure>figcaption]:text-muted-foreground [&>figure>figcaption]:mt-2 [&>figure>figcaption]:text-left
               [&>img]:w-full [&>img]:h-auto [&>img]:my-6
-              [&>hr]:my-8 [&>hr]:border-border
+              [&>hr]:my-10 [&>hr]:border-border
             ">
               {contentParts.map((part, index) => (
                 <div key={index}>

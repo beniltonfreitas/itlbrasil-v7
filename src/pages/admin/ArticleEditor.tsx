@@ -89,6 +89,7 @@ const articleSchema = z.object({
   .transform(input => normalizeImageInput(input))
   .refine(img => img.hero && isHttpsImageUrl(img.hero), "Imagem hero deve usar HTTPS e formato válido"),
   image_credit: z.string().optional(),
+  location: z.string().max(100, "Local deve ter no máximo 100 caracteres").optional(),
   source_url: z.string().url("URL da fonte deve ser válida").optional().or(z.literal("")),
   meta_title: z.string().max(60, "Meta título deve ter no máximo 60 caracteres").optional(),
   meta_description: z.string().max(160, "Meta descrição deve ter no máximo 160 caracteres").optional(),
@@ -150,6 +151,7 @@ const ArticleEditor = () => {
       category_id: "",
       imagem: { hero: "", og: "", card: "", alt: "" },
       image_credit: "",
+      location: "",
       source_url: "",
       meta_title: "",
       meta_description: "",
@@ -337,6 +339,7 @@ const ArticleEditor = () => {
           category_id: article.category?.id || "",
           imagem: imageData,
           image_credit: (article as any).image_credit || "",
+          location: (article as any).location || "",
           source_url: (article as any).source_url || "",
       meta_title: article.meta_title || "",
       meta_description: article.meta_description || "",
@@ -464,6 +467,7 @@ const ArticleEditor = () => {
         imagem: data.imagem,
         featured_image: data.imagem.hero, // Backward compatibility
         image_credit: data.image_credit || undefined,
+        location: data.location || undefined,
         source_url: data.source_url || undefined,
         meta_title: data.meta_title || undefined,
         meta_description: data.meta_description || undefined,
@@ -740,6 +744,23 @@ const ArticleEditor = () => {
                             </FormControl>
                             <p className="text-xs text-muted-foreground">
                               URL da matéria original (usado para reescrita com IA)
+                            </p>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="location"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Local (opcional)</FormLabel>
+                            <FormControl>
+                              <Input {...field} placeholder="Ex: São Paulo, Rio de Janeiro, Brasília" />
+                            </FormControl>
+                            <p className="text-xs text-muted-foreground">
+                              Cidade/local onde a notícia foi escrita
                             </p>
                             <FormMessage />
                           </FormItem>

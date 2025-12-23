@@ -38,6 +38,31 @@ export const SafeHTML: React.FC<SafeHTMLProps> = ({
     SANITIZE_DOM: true
   };
 
+  // Convert citation patterns to blockquotes
+  const convertCitationsToBlockquotes = (content: string): string => {
+    let processed = content;
+    
+    // Pattern 1: Text in quotes followed by attribution (e.g., "Texto aqui", disse João Silva)
+    processed = processed.replace(
+      /<p>\s*[""]([^""]+)[""]\s*,?\s*(disse|afirmou|declarou|explicou|ressaltou|destacou|comentou|observou|pontuou|acrescentou|completou|concluiu|informou|revelou|contou|lembrou|alertou|avaliou|analisou|argumentou|defendeu|criticou|elogiou|questionou|respondeu|garantiu|prometeu|admitiu|reconheceu|confessou|negou|confirmou)\s+([^<]+)<\/p>/gi,
+      '<blockquote><p>"$1"</p><cite>— $3</cite></blockquote>'
+    );
+    
+    // Pattern 2: Quote with source in parentheses
+    processed = processed.replace(
+      /<p>\s*[""]([^""]+)[""]\s*\(([^)]+)\)\s*<\/p>/gi,
+      '<blockquote><p>"$1"</p><cite>— $2</cite></blockquote>'
+    );
+    
+    // Pattern 3: Para/Segundo attribution followed by quote
+    processed = processed.replace(
+      /<p>\s*(Para|Segundo|De acordo com|Conforme|Na visão de|Na opinião de)\s+([^,]+),\s*[""]([^""]+)[""]\s*\.?\s*<\/p>/gi,
+      '<blockquote><p>"$3"</p><cite>— $2</cite></blockquote>'
+    );
+    
+    return processed;
+  };
+
   // Normalize content: convert plain text to paragraphs, clean up HTML
   const normalizeContent = (content: string): string => {
     // Remove inline styles
@@ -73,6 +98,9 @@ export const SafeHTML: React.FC<SafeHTMLProps> = ({
     // Clean up empty paragraphs
     normalized = normalized.replace(/<p>\s*<\/p>/gi, '');
     normalized = normalized.replace(/<p>\s*<br\s*\/?>\s*<\/p>/gi, '');
+    
+    // Convert citation patterns to blockquotes
+    normalized = convertCitationsToBlockquotes(normalized);
     
     return normalized;
   };

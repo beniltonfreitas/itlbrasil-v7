@@ -808,6 +808,7 @@ export type Database = {
           featured_image_json: Json | null
           id: string
           import_mode: string | null
+          location: string | null
           meta_description: string | null
           meta_keywords: string | null
           meta_title: string | null
@@ -838,6 +839,7 @@ export type Database = {
           featured_image_json?: Json | null
           id?: string
           import_mode?: string | null
+          location?: string | null
           meta_description?: string | null
           meta_keywords?: string | null
           meta_title?: string | null
@@ -868,6 +870,7 @@ export type Database = {
           featured_image_json?: Json | null
           id?: string
           import_mode?: string | null
+          location?: string | null
           meta_description?: string | null
           meta_keywords?: string | null
           meta_title?: string | null
