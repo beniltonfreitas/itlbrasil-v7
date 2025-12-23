@@ -92,106 +92,96 @@ const ArticleComplete = () => {
         <article className="container mx-auto px-4 py-8">
           <div className="max-w-3xl mx-auto">
             
-            {/* 1. Categoria editorial (tag pequena colorida) */}
+            {/* 1. Categoria editorial (tag pequena colorida) - CENTRALIZADA */}
             {article.category && (
-              <Link to={`/${article.category.slug}`} className="inline-block mb-4">
-                <Badge 
-                  className="text-xs uppercase tracking-wide font-medium px-3 py-1 hover:opacity-90 transition-opacity"
-                  style={{ 
-                    backgroundColor: article.category.color || 'hsl(var(--primary))', 
-                    color: 'white' 
-                  }}
-                >
-                  {article.category.name}
-                </Badge>
-              </Link>
+              <div className="text-center mb-4">
+                <Link to={`/${article.category.slug}`} className="inline-block">
+                  <Badge 
+                    className="text-xs uppercase tracking-wide font-medium px-3 py-1 hover:opacity-90 transition-opacity"
+                    style={{ 
+                      backgroundColor: article.category.color || 'hsl(var(--primary))', 
+                      color: 'white' 
+                    }}
+                  >
+                    {article.category.name}
+                  </Badge>
+                </Link>
+              </div>
             )}
 
-            {/* 2. Título principal (H1) */}
-            <header className="mb-6">
-              <h1 className="text-3xl md:text-4xl lg:text-[2.5rem] font-bold text-foreground leading-tight mb-3">
+            {/* 2. Título principal (H1) - CENTRALIZADO */}
+            <header className="mb-6 text-center">
+              <h1 className="text-3xl md:text-4xl lg:text-[2.5rem] font-bold text-[#0C1A3D] leading-tight mb-3">
                 {article.title}
               </h1>
               
-              {/* 3. Subtítulo (H2 ou p.subtitle) - se houver excerpt */}
+              {/* 3. Subtítulo - CENTRALIZADO */}
               {article.excerpt && (
-                <p className="text-lg md:text-xl text-muted-foreground leading-relaxed mb-4 font-normal">
+                <p className="text-lg md:text-xl text-muted-foreground leading-relaxed mb-6 font-normal">
                   {article.excerpt}
                 </p>
               )}
-              
-              {/* 4. Créditos editoriais (data, autor, local) */}
-              <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground mb-4">
-                <time dateTime={article.published_at || article.created_at}>
-                  {format(new Date(article.published_at || article.created_at), "d 'de' MMMM 'de' yyyy, HH:mm", { locale: ptBR })}
-                </time>
-                <span className="text-muted-foreground/40">|</span>
-                <span className="font-medium text-foreground/80">
-                  Por {authorName}
-                </span>
-                {(article as any).location && (
-                  <>
-                    <span className="text-muted-foreground/40">|</span>
-                    <span>{(article as any).location}</span>
-                  </>
-                )}
-                {article.read_time && (
-                  <>
-                    <span className="text-muted-foreground/40">|</span>
-                    <div className="flex items-center gap-1">
-                      <Clock className="h-3.5 w-3.5" />
-                      <span>{article.read_time} min</span>
-                    </div>
-                  </>
-                )}
-              </div>
-
-              {/* Ícones de compartilhamento */}
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground mr-1">Compartilhar:</span>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8 text-muted-foreground hover:text-[#1877F2] hover:bg-[#1877F2]/10"
-                  onClick={() => handleShare('facebook')}
-                  aria-label="Compartilhar no Facebook"
-                >
-                  <Facebook className="h-4 w-4" />
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8 text-muted-foreground hover:text-[#1DA1F2] hover:bg-[#1DA1F2]/10"
-                  onClick={() => handleShare('twitter')}
-                  aria-label="Compartilhar no Twitter"
-                >
-                  <Twitter className="h-4 w-4" />
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8 text-muted-foreground hover:text-[#0A66C2] hover:bg-[#0A66C2]/10"
-                  onClick={() => handleShare('linkedin')}
-                  aria-label="Compartilhar no LinkedIn"
-                >
-                  <Linkedin className="h-4 w-4" />
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8 text-muted-foreground hover:text-[#25D366] hover:bg-[#25D366]/10"
-                  onClick={() => handleShare('whatsapp')}
-                  aria-label="Compartilhar no WhatsApp"
-                >
-                  <Share2 className="h-4 w-4" />
-                </Button>
-              </div>
             </header>
 
-            {/* 5. Imagem principal (Hero) - Proporção 16:9 */}
+            {/* 4. Créditos editoriais no formato Agência Brasil */}
+            <div className="mb-6">
+              <div className="font-medium text-foreground mb-1">{authorName}</div>
+              <div className="flex justify-between items-center">
+                <div className="text-sm text-muted-foreground">
+                  <time dateTime={article.published_at || article.created_at}>
+                    Publicado em {format(new Date(article.published_at || article.created_at), "dd/MM/yyyy - HH:mm", { locale: ptBR })}
+                  </time>
+                </div>
+                {/* Ícones de compartilhamento */}
+                <div className="flex items-center gap-1">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-7 w-7 text-muted-foreground hover:text-[#1877F2] hover:bg-[#1877F2]/10"
+                    onClick={() => handleShare('facebook')}
+                    aria-label="Compartilhar no Facebook"
+                  >
+                    <Facebook className="h-4 w-4" />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-7 w-7 text-muted-foreground hover:text-[#1DA1F2] hover:bg-[#1DA1F2]/10"
+                    onClick={() => handleShare('twitter')}
+                    aria-label="Compartilhar no Twitter"
+                  >
+                    <Twitter className="h-4 w-4" />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-7 w-7 text-muted-foreground hover:text-[#0A66C2] hover:bg-[#0A66C2]/10"
+                    onClick={() => handleShare('linkedin')}
+                    aria-label="Compartilhar no LinkedIn"
+                  >
+                    <Linkedin className="h-4 w-4" />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-7 w-7 text-muted-foreground hover:text-[#25D366] hover:bg-[#25D366]/10"
+                    onClick={() => handleShare('whatsapp')}
+                    aria-label="Compartilhar no WhatsApp"
+                  >
+                    <Share2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+              {(article as any).location && (
+                <div className="text-sm text-muted-foreground">{(article as any).location}</div>
+              )}
+
+            </div>
+
+            {/* 5. Imagem principal com crédito DENTRO da imagem */}
             {article.featured_image && (
-              <figure className="mb-6">
-                <div className="aspect-video w-full overflow-hidden rounded-lg">
+              <figure className="mb-6 relative">
+                <div className="aspect-video w-full overflow-hidden">
                   <img
                     src={article.featured_image}
                     alt={(article as any).featured_image_alt || article.title}
@@ -200,8 +190,8 @@ const ArticleComplete = () => {
                   />
                 </div>
                 {((article as any).featured_image_credit || (article as any).image_credit) && (
-                  <figcaption className="text-sm text-muted-foreground mt-2 text-right">
-                    Foto: {(article as any).featured_image_credit || (article as any).image_credit}
+                  <figcaption className="absolute bottom-0 right-0 text-xs text-white bg-black/60 px-2 py-1">
+                    © {(article as any).featured_image_credit || (article as any).image_credit}
                   </figcaption>
                 )}
               </figure>
@@ -226,9 +216,8 @@ const ArticleComplete = () => {
               [&>ul]:mb-5 [&>ul]:pl-6 [&>ul]:list-disc
               [&>ol]:mb-5 [&>ol]:pl-6 [&>ol]:list-decimal
               [&>li]:mb-2
-              [&>blockquote]:border-l-4 [&>blockquote]:border-blue-500 [&>blockquote]:pl-6 [&>blockquote]:py-4 [&>blockquote]:my-8 [&>blockquote]:bg-slate-50 dark:[&>blockquote]:bg-slate-900/50 [&>blockquote]:italic [&>blockquote]:text-lg [&>blockquote]:text-foreground/85 [&>blockquote]:rounded-r-md
+              [&>blockquote]:border-l-4 [&>blockquote]:border-gray-800 [&>blockquote]:pl-6 [&>blockquote]:py-2 [&>blockquote]:my-6 [&>blockquote]:bg-transparent [&>blockquote]:text-base [&>blockquote]:text-foreground/90
               [&>blockquote>p]:mb-2 [&>blockquote>p]:last:mb-0
-              [&>blockquote>cite]:block [&>blockquote>cite]:text-sm [&>blockquote>cite]:not-italic [&>blockquote>cite]:font-medium [&>blockquote>cite]:text-muted-foreground [&>blockquote>cite]:mt-3
               [&>figure]:my-6 [&>figure>img]:w-full [&>figure>img]:h-auto
               [&>figure>figcaption]:text-sm [&>figure>figcaption]:text-muted-foreground [&>figure>figcaption]:mt-2 [&>figure>figcaption]:text-left
               [&>img]:w-full [&>img]:h-auto [&>img]:my-6
