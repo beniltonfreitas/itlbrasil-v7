@@ -60,6 +60,7 @@ import BannersManager from "./pages/admin/BannersManager";
 import ReporterAI from "./pages/admin/ReporterAI";
 import ReporterAIv2 from "./pages/admin/ReporterAIv2";
 import JsonGenerator from "./pages/admin/JsonGenerator";
+import NoticiasAI from "./pages/admin/NoticiasAI";
 
 import JornalistaProTools from "./pages/admin/JornalistaProTools";
 import StudioPlaceholder from "./pages/admin/StudioPlaceholder";
@@ -210,6 +211,7 @@ const AdminRoutes = () => {
         <Route path="reporter-ai" element={<ReporterAI />} />
         <Route path="reporter-ai-v2" element={<ReporterAIv2 />} />
         <Route path="json-generator" element={<JsonGenerator />} />
+        <Route path="noticias-ai" element={<NoticiasAI />} />
         
         {/* RSS Import Route */}
         <Route path="import" element={<RSSImportManager />} />

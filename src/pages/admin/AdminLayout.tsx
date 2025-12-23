@@ -207,6 +207,9 @@ const AdminLayout = () => {
     // 3. Enviar Imagem (destaque)
     { name: "Enviar Imagem", href: "/admin/upload-imagem", icon: Image, permission: "upload-image", highlight: true },
     
+    // 3.5. Notícias AI
+    { name: "Notícias AI", href: "/admin/noticias-ai", icon: Newspaper, permission: "noticias-ai" },
+    
     // 4. Cadastrar Notícias
     { name: "Cadastrar Notícias", href: "/admin/articles/new", icon: PlusCircle, permission: "article-editor" },
     

@@ -59,6 +59,9 @@ verify_jwt = true
 [functions.text-to-speech]
 verify_jwt = false
 
+[functions.noticias-ai]
+verify_jwt = true
+
 # Cron job for reporter-worker: Run every 2 minutes
 [cron."reporter-worker"]
 schedule = "*/2 * * * *"
