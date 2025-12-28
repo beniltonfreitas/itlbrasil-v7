@@ -89,10 +89,13 @@ const ReporterAIv2 = () => {
 
       // Save to history
       await saveToHistory(
-        newsUrl.trim(), 
         data.json, 
         'reporter-ai', 
-        imageUrl.trim() || undefined, 
+        {
+          newsUrl: newsUrl.trim(),
+          imageUrl: imageUrl.trim() || undefined,
+          articlesCount: 1
+        },
         'done'
       );
 

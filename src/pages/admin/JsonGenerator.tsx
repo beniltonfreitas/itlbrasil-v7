@@ -189,7 +189,11 @@ const JsonGenerator = () => {
       // Save to history
       const firstUrl = parsedItems[0]?.newsUrl || 'batch';
       const firstImage = parsedItems[0]?.imageUrl;
-      await saveToHistory(firstUrl, jsonFinal, 'json-generator', firstImage, 'done');
+      await saveToHistory(jsonFinal, 'json-generator', {
+        newsUrl: firstUrl,
+        imageUrl: firstImage,
+        articlesCount: noticiasAgregadas.length
+      }, 'done');
 
       if (falhas.length > 0) {
         console.warn('[JsonGenerator] Itens que falharam:', falhas);
