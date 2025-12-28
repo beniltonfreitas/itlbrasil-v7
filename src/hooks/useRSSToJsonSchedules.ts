@@ -33,12 +33,12 @@ export const useRSSJsonSchedules = () => {
     queryKey: ['rss-json-schedules'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('rss_json_schedules')
+        .from('rss_json_schedules' as any)
         .select('*')
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return data as RSSJsonSchedule[];
+      return (data || []) as unknown as RSSJsonSchedule[];
     }
   });
 };
@@ -48,7 +48,7 @@ export const useRSSJsonScheduleLogs = (scheduleId?: string) => {
     queryKey: ['rss-json-schedule-logs', scheduleId],
     queryFn: async () => {
       let query = supabase
-        .from('rss_json_schedule_logs')
+        .from('rss_json_schedule_logs' as any)
         .select('*')
         .order('created_at', { ascending: false })
         .limit(50);
@@ -59,7 +59,7 @@ export const useRSSJsonScheduleLogs = (scheduleId?: string) => {
       
       const { data, error } = await query;
       if (error) throw error;
-      return data as RSSJsonScheduleLog[];
+      return (data || []) as unknown as RSSJsonScheduleLog[];
     },
     enabled: !!scheduleId || scheduleId === undefined
   });
@@ -76,7 +76,7 @@ export const useCreateRSSJsonSchedule = () => {
       const nextRun = new Date(Date.now() + schedule.interval_minutes * 60 * 1000).toISOString();
       
       const { data, error } = await supabase
-        .from('rss_json_schedules')
+        .from('rss_json_schedules' as any)
         .insert({
           ...schedule,
           created_by: user?.id,
@@ -86,7 +86,7 @@ export const useCreateRSSJsonSchedule = () => {
         .single();
       
       if (error) throw error;
-      return data;
+      return data as unknown as RSSJsonSchedule;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['rss-json-schedules'] });
@@ -112,14 +112,14 @@ export const useUpdateRSSJsonSchedule = () => {
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<RSSJsonSchedule> & { id: string }) => {
       const { data, error } = await supabase
-        .from('rss_json_schedules')
+        .from('rss_json_schedules' as any)
         .update(updates)
         .eq('id', id)
         .select()
         .single();
       
       if (error) throw error;
-      return data;
+      return data as unknown as RSSJsonSchedule;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['rss-json-schedules'] });
@@ -145,7 +145,7 @@ export const useDeleteRSSJsonSchedule = () => {
   return useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
-        .from('rss_json_schedules')
+        .from('rss_json_schedules' as any)
         .delete()
         .eq('id', id);
       
@@ -174,14 +174,14 @@ export const useToggleScheduleActive = () => {
   return useMutation({
     mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
       const { data, error } = await supabase
-        .from('rss_json_schedules')
+        .from('rss_json_schedules' as any)
         .update({ is_active })
         .eq('id', id)
         .select()
         .single();
       
       if (error) throw error;
-      return data;
+      return data as unknown as RSSJsonSchedule;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['rss-json-schedules'] });

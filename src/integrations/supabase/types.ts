@@ -2231,6 +2231,92 @@ export type Database = {
           },
         ]
       }
+      rss_json_schedule_logs: {
+        Row: {
+          articles_failed: number | null
+          articles_processed: number | null
+          created_at: string | null
+          error_message: string | null
+          id: string
+          json_output: string | null
+          schedule_id: string | null
+          status: string
+        }
+        Insert: {
+          articles_failed?: number | null
+          articles_processed?: number | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          json_output?: string | null
+          schedule_id?: string | null
+          status: string
+        }
+        Update: {
+          articles_failed?: number | null
+          articles_processed?: number | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          json_output?: string | null
+          schedule_id?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rss_json_schedule_logs_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "rss_json_schedules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rss_json_schedules: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          feed_ids: string[]
+          id: string
+          interval_minutes: number | null
+          is_active: boolean | null
+          last_run: string | null
+          name: string
+          next_run: string | null
+          output_action: string | null
+          quantity_per_feed: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          feed_ids?: string[]
+          id?: string
+          interval_minutes?: number | null
+          is_active?: boolean | null
+          last_run?: string | null
+          name: string
+          next_run?: string | null
+          output_action?: string | null
+          quantity_per_feed?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          feed_ids?: string[]
+          id?: string
+          interval_minutes?: number | null
+          is_active?: boolean | null
+          last_run?: string | null
+          name?: string
+          next_run?: string | null
+          output_action?: string | null
+          quantity_per_feed?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       session_participants: {
         Row: {
           created_at: string | null
