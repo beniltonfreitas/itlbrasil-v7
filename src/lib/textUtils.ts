@@ -85,3 +85,71 @@ export const removeWhatsAppCTA = (htmlContent: string): string => {
   
   return cleaned.trim();
 };
+
+/**
+ * Validation result for content formatting
+ */
+export interface FormatValidationResult {
+  valid: boolean;
+  message?: string;
+}
+
+/**
+ * Validate if the first paragraph is bold (Agência Brasil standard)
+ * The first paragraph (lide) should be wrapped in <strong> tags
+ */
+export const validateFirstParagraphBold = (html: string): FormatValidationResult => {
+  if (!html || html.trim() === '') {
+    return { valid: false, message: 'Conteúdo vazio' };
+  }
+  
+  // Find the first <p> tag content
+  const firstParagraphMatch = html.match(/<p[^>]*>([\s\S]*?)<\/p>/i);
+  
+  if (!firstParagraphMatch) {
+    return { valid: false, message: 'Nenhum parágrafo encontrado no conteúdo' };
+  }
+  
+  const firstParagraphContent = firstParagraphMatch[1].trim();
+  
+  // Check if content is wrapped in <strong> tags (allowing for nested tags)
+  // The pattern should match: <strong>...content...</strong>
+  const strongPattern = /^\s*<strong[^>]*>[\s\S]+<\/strong>\s*$/i;
+  const isBold = strongPattern.test(firstParagraphContent);
+  
+  if (!isBold) {
+    return { 
+      valid: false, 
+      message: 'O primeiro parágrafo (lide) deve estar em negrito. Padrão: <p><strong>Lide aqui...</strong></p>' 
+    };
+  }
+  
+  return { valid: true };
+};
+
+/**
+ * Auto-fix the first paragraph by wrapping it in <strong> tags
+ * if it's not already bold
+ */
+export const autoFixFirstParagraph = (html: string): string => {
+  if (!html || html.trim() === '') return html;
+  
+  const validation = validateFirstParagraphBold(html);
+  if (validation.valid) return html;
+  
+  // Find and replace the first paragraph
+  const firstParagraphMatch = html.match(/<p([^>]*)>([\s\S]*?)<\/p>/i);
+  
+  if (!firstParagraphMatch) return html;
+  
+  const [fullMatch, attributes, content] = firstParagraphMatch;
+  const trimmedContent = content.trim();
+  
+  // Skip if already has strong tag
+  if (/<strong[^>]*>/i.test(trimmedContent)) return html;
+  
+  // Wrap content in strong tags
+  const fixedParagraph = `<p${attributes}><strong>${trimmedContent}</strong></p>`;
+  
+  return html.replace(fullMatch, fixedParagraph);
+};
