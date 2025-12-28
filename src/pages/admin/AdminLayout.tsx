@@ -245,6 +245,7 @@ const AdminLayout = () => {
         // ============ Repórter AI ============
         { name: "Repórter AI", href: "/admin/reporter-ai-v2", icon: Sparkles, permission: "reporter-ai", category: "reporter-ai" },
         { name: "Gerador JSON", href: "/admin/json-generator", icon: FileText, permission: "json-generator", category: "reporter-ai" },
+        { name: "RSS → JSON", href: "/admin/rss-to-json", icon: Rss, permission: "rss-to-json", category: "reporter-ai" },
         { name: "Repórter GPT", href: "https://chatgpt.com/g/g-6900f51c074c819192f61cb9e3f9010f-reporter-ai", icon: ExternalLink, permission: "reporter-gpt", external: true, category: "reporter-ai" },
         
         // ============ Outras Funcionalidades ============

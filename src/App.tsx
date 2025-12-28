@@ -70,6 +70,7 @@ import WebStoryEditor from "./pages/admin/WebStoryEditor";
 import WebStoriesPublicList from "./pages/WebStoriesPublicList";
 import WebStoryReader from "./pages/WebStoryReader";
 import RSSImportManager from "./pages/admin/RSSImportManager";
+import RSSToJsonGenerator from "./pages/admin/RSSToJsonGenerator";
 import AccessibilitySettings from "./pages/admin/AccessibilitySettings";
 import NFSeManager from "./pages/admin/NFSeManager";
 import EditionsList from "./pages/admin/editions/EditionsList";
@@ -222,6 +223,7 @@ const AdminRoutes = () => {
         
         {/* RSS Import Route */}
         <Route path="import" element={<RSSImportManager />} />
+        <Route path="rss-to-json" element={<RSSToJsonGenerator />} />
         
         {/* Other Routes */}
         <Route path="studio" element={<StudioPro />} />
