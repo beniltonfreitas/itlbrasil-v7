@@ -271,9 +271,51 @@ REGRAS GERAIS:
 IMPORTANTE PARA O JSON (formato Importar em Massa):
 - "fonte": DEVE ser uma URL válida começando com https:// (ex: "https://agenciabrasil.ebc.com.br/...")
   Se não houver URL de fonte, use: "https://itlbrasil.com"
-- "conteudo": DEVE ser formatado em HTML com parágrafos <p>...</p>. Cada parágrafo deve estar dentro de tags <p>.
+- "conteudo": DEVE ser formatado em HTML seguindo o PADRÃO AGÊNCIA BRASIL abaixo
 - "tags": DEVE ter EXATAMENTE 12 tags relevantes (não mais, não menos). Cada tag com máximo 40 caracteres.
 - "imagem": DEVE ser um objeto com hero, og, card (URLs HTTPS), alt (5-140 chars) e credito
+
+FORMATAÇÃO DE CONTEÚDO HTML (PADRÃO AGÊNCIA BRASIL):
+
+1. PRIMEIRO PARÁGRAFO (LIDE) - OBRIGATÓRIO:
+   - SEMPRE em negrito: <p><strong>Primeiro parágrafo com o lide completo...</strong></p>
+   - Deve responder: Quem? O quê? Quando? Onde?
+   - Máximo 3-4 linhas
+
+2. DESTAQUES NO TEXTO:
+   - Use <strong> para informações-chave importantes em parágrafos normais
+   - Exemplo: <p><strong>Não há surto de sarampo no país.</strong> A situação está controlada.</p>
+
+3. CITAÇÕES/FALAS DE FONTES:
+   - Use <blockquote> para declarações de fontes oficiais ou entrevistados
+   - Exemplo: <blockquote>"Declaração da autoridade ou entrevistado aqui..."</blockquote>
+   - Sempre identifique a fonte após a citação
+
+4. LISTAS DE ORIENTAÇÕES/RECOMENDAÇÕES:
+   - Use <ul><li> para listas, recomendações ou itens enumerados
+   - Exemplo: <ul><li>Primeira orientação</li><li>Segunda orientação</li></ul>
+
+5. INTERTÍTULOS (para textos longos):
+   - Use <h2> para separar seções temáticas em matérias extensas
+   - Exemplo: <h2>Próximos passos</h2>
+
+6. DATAS CONTEXTUALIZADAS:
+   - Use referências claras como "neste sábado (27)", "próxima terça-feira (30)", "ontem (26)"
+   - Evite datas absolutas sem contexto
+
+7. PARÁGRAFOS:
+   - Curtos (2-4 linhas cada)
+   - Linguagem objetiva e factual
+   - Cada parágrafo em <p>...</p>
+
+8. ESTRUTURA RECOMENDADA DO CONTEÚDO:
+   <p><strong>Lide em negrito respondendo quem, o quê, quando, onde...</strong></p>
+   <p>Desenvolvimento com mais detalhes...</p>
+   <blockquote>"Citação de fonte oficial se houver..."</blockquote>
+   <p>Contexto adicional...</p>
+   <h2>Intertítulo se necessário</h2>
+   <ul><li>Lista se aplicável</li></ul>
+   <p>Conclusão ou próximos passos...</p>
 
 FORMATO DE RESPOSTA JSON:
 {
@@ -290,7 +332,7 @@ FORMATO DE RESPOSTA JSON:
     },
     "textoAlternativo": "string",
     "creditoImagem": "string",
-    "conteudo": "string (texto puro sem HTML)",
+    "conteudo": "string (HTML formatado conforme padrão acima)",
     "galeriaImagens": ["URL1", "URL2"],
     "seo": {
       "metaTitulo": "string (max 60 chars)",
@@ -303,7 +345,7 @@ FORMATO DE RESPOSTA JSON:
       "titulo": "string (6-120 chars)",
       "slug": "string (kebab-case, letras minúsculas, números e hífens)",
       "resumo": "string (max 160 chars)",
-      "conteudo": "string (HTML com parágrafos <p>)</p>",
+      "conteudo": "string (HTML formatado conforme PADRÃO AGÊNCIA BRASIL acima)",
       "fonte": "URL HTTPS válida (ex: https://agenciabrasil.ebc.com.br/...)",
       "imagem": {
         "hero": "URL HTTPS da imagem principal",
