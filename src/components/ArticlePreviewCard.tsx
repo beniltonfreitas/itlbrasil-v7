@@ -1,8 +1,21 @@
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ExternalLink, Image as ImageIcon } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { ExternalLink, Image as ImageIcon, AlertTriangle, Copy } from "lucide-react";
+import { formatDistanceToNow, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+
+interface DuplicateInfo {
+  isDuplicate: boolean;
+  matchType: 'title' | 'url' | 'slug' | null;
+  existingArticle?: {
+    id: string;
+    title: string;
+    slug: string;
+    published_at: string | null;
+  };
+  similarity?: number;
+}
 
 interface RSSArticle {
   id: string;
@@ -14,6 +27,7 @@ interface RSSArticle {
   feedId: string;
   feedName: string;
   selected: boolean;
+  duplicateInfo?: DuplicateInfo;
 }
 
 interface ArticlePreviewCardProps {
@@ -29,10 +43,25 @@ const ArticlePreviewCard = ({ article, onToggle }: ArticlePreviewCardProps) => {
       : article.description
     : "";
 
+  const isDuplicate = article.duplicateInfo?.isDuplicate;
+  const matchType = article.duplicateInfo?.matchType;
+  const existingArticle = article.duplicateInfo?.existingArticle;
+
+  const getDuplicateLabel = () => {
+    switch (matchType) {
+      case 'url': return 'URL idêntica';
+      case 'slug': return 'Slug idêntico';
+      case 'title': return `Título ${article.duplicateInfo?.similarity}% similar`;
+      default: return 'Duplicado';
+    }
+  };
+
   return (
     <div
       className={`group relative overflow-hidden rounded-xl border transition-all duration-200 cursor-pointer ${
-        article.selected
+        isDuplicate
+          ? "border-amber-500/50 bg-amber-500/5 opacity-75"
+          : article.selected
           ? "border-primary bg-primary/5 shadow-md"
           : "border-border hover:border-primary/50 hover:shadow-sm bg-card"
       }`}
@@ -40,7 +69,7 @@ const ArticlePreviewCard = ({ article, onToggle }: ArticlePreviewCardProps) => {
     >
       <div className="flex gap-4 p-4">
         {/* Thumbnail */}
-        <div className="flex-shrink-0">
+        <div className="flex-shrink-0 relative">
           {article.image ? (
             <div className="relative w-24 h-20 rounded-lg overflow-hidden bg-muted">
               <img
@@ -55,10 +84,19 @@ const ArticlePreviewCard = ({ article, onToggle }: ArticlePreviewCardProps) => {
                   e.currentTarget.parentElement?.appendChild(placeholder);
                 }}
               />
+              {isDuplicate && (
+                <div className="absolute inset-0 bg-amber-500/20 flex items-center justify-center">
+                  <Copy className="h-5 w-5 text-amber-600" />
+                </div>
+              )}
             </div>
           ) : (
             <div className="w-24 h-20 rounded-lg bg-muted flex items-center justify-center">
-              <ImageIcon className="h-8 w-8 text-muted-foreground/40" />
+              {isDuplicate ? (
+                <Copy className="h-8 w-8 text-amber-500/60" />
+              ) : (
+                <ImageIcon className="h-8 w-8 text-muted-foreground/40" />
+              )}
             </div>
           )}
         </div>
@@ -66,9 +104,42 @@ const ArticlePreviewCard = ({ article, onToggle }: ArticlePreviewCardProps) => {
         {/* Content */}
         <div className="flex-1 min-w-0 flex flex-col">
           {/* Title */}
-          <h3 className="font-semibold text-sm leading-tight line-clamp-2 mb-2 group-hover:text-primary transition-colors">
-            {article.title}
-          </h3>
+          <div className="flex items-start gap-2 mb-2">
+            <h3 className={`font-semibold text-sm leading-tight line-clamp-2 group-hover:text-primary transition-colors ${
+              isDuplicate ? 'text-muted-foreground' : ''
+            }`}>
+              {article.title}
+            </h3>
+            {isDuplicate && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Badge variant="outline" className="flex-shrink-0 bg-amber-500/10 text-amber-600 border-amber-500/30 text-xs">
+                      <AlertTriangle className="h-3 w-3 mr-1" />
+                      Duplicado
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="max-w-xs">
+                    <div className="space-y-1">
+                      <p className="font-medium">{getDuplicateLabel()}</p>
+                      {existingArticle && (
+                        <>
+                          <p className="text-xs text-muted-foreground">
+                            "{existingArticle.title.substring(0, 60)}..."
+                          </p>
+                          {existingArticle.published_at && (
+                            <p className="text-xs text-muted-foreground">
+                              Publicado em {format(new Date(existingArticle.published_at), "dd/MM/yyyy", { locale: ptBR })}
+                            </p>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+          </div>
 
           {/* Description */}
           {truncatedDescription && (
@@ -116,8 +187,11 @@ const ArticlePreviewCard = ({ article, onToggle }: ArticlePreviewCardProps) => {
       </div>
 
       {/* Selection indicator bar */}
-      {article.selected && (
+      {article.selected && !isDuplicate && (
         <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary" />
+      )}
+      {isDuplicate && (
+        <div className="absolute left-0 top-0 bottom-0 w-1 bg-amber-500" />
       )}
     </div>
   );

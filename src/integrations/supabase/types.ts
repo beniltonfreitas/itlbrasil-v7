@@ -1637,6 +1637,51 @@ export type Database = {
           },
         ]
       }
+      json_generation_history: {
+        Row: {
+          articles_count: number | null
+          created_at: string | null
+          error_message: string | null
+          feed_ids: string[] | null
+          generated_json: Json
+          id: string
+          image_url: string | null
+          name: string | null
+          news_url: string | null
+          source_tool: string | null
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          articles_count?: number | null
+          created_at?: string | null
+          error_message?: string | null
+          feed_ids?: string[] | null
+          generated_json: Json
+          id?: string
+          image_url?: string | null
+          name?: string | null
+          news_url?: string | null
+          source_tool?: string | null
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          articles_count?: number | null
+          created_at?: string | null
+          error_message?: string | null
+          feed_ids?: string[] | null
+          generated_json?: Json
+          id?: string
+          image_url?: string | null
+          name?: string | null
+          news_url?: string | null
+          source_tool?: string | null
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       live_streams: {
         Row: {
           chat_enabled: boolean | null

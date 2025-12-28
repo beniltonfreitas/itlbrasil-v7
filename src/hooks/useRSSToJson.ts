@@ -1,18 +1,10 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useDuplicateDetection, ArticleWithDuplicateInfo } from "@/hooks/useDuplicateDetection";
+import { useJsonHistory } from "@/hooks/useJsonHistory";
 
-export interface RSSArticle {
-  id: string;
-  title: string;
-  link: string;
-  description: string;
-  pubDate: string;
-  image?: string;
-  feedId: string;
-  feedName: string;
-  selected: boolean;
-}
+export interface RSSArticle extends ArticleWithDuplicateInfo {}
 
 export interface FeedSelection {
   feedId: string;
@@ -42,6 +34,10 @@ export const useRSSToJson = () => {
   const [isFetching, setIsFetching] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
+  const [hideDuplicates, setHideDuplicates] = useState(false);
+  
+  const { checkDuplicates, isChecking, duplicatesCount } = useDuplicateDetection();
+  const { saveToHistory } = useJsonHistory();
 
   const fetchArticlesFromFeeds = async (selections: FeedSelection[]) => {
     setIsFetching(true);
@@ -87,12 +83,18 @@ export const useRSSToJson = () => {
         }
       }
 
-      setArticles(allArticles);
+      // Check for duplicates
+      const articlesWithDuplicateInfo = await checkDuplicates(allArticles);
+      setArticles(articlesWithDuplicateInfo);
       
-      if (allArticles.length > 0) {
+      const duplicates = articlesWithDuplicateInfo.filter(a => a.duplicateInfo?.isDuplicate).length;
+      
+      if (articlesWithDuplicateInfo.length > 0) {
         toast({
           title: "Artigos encontrados",
-          description: `${allArticles.length} artigos carregados dos feeds selecionados`
+          description: duplicates > 0 
+            ? `${articlesWithDuplicateInfo.length} artigos carregados (${duplicates} duplicados detectados)`
+            : `${articlesWithDuplicateInfo.length} artigos carregados dos feeds selecionados`
         });
       } else {
         toast({
@@ -102,7 +104,7 @@ export const useRSSToJson = () => {
         });
       }
 
-      return allArticles;
+      return articlesWithDuplicateInfo;
     } catch (error) {
       console.error("Erro ao buscar artigos:", error);
       toast({
@@ -116,7 +118,7 @@ export const useRSSToJson = () => {
     }
   };
 
-  const generateJsonFromArticles = async (selectedArticles: RSSArticle[]) => {
+  const generateJsonFromArticles = async (selectedArticles: RSSArticle[], feedIds?: string[]) => {
     if (selectedArticles.length === 0) {
       toast({
         title: "Nenhum artigo selecionado",
@@ -174,6 +176,17 @@ export const useRSSToJson = () => {
       const jsonOutput = JSON.stringify({ noticias: generatedArticles }, null, 2);
       setGeneratedJson(jsonOutput);
 
+      // Save to history
+      await saveToHistory(
+        { noticias: generatedArticles },
+        'rss-to-json',
+        {
+          articlesCount: generatedArticles.length,
+          feedIds: feedIds
+        },
+        'done'
+      );
+
       toast({
         title: "JSON gerado com sucesso",
         description: `${generatedArticles.length} artigos processados`
@@ -203,8 +216,13 @@ export const useRSSToJson = () => {
     );
   };
 
-  const selectAllArticles = (selected: boolean) => {
-    setArticles(prev => prev.map(article => ({ ...article, selected })));
+  const selectAllArticles = (selected: boolean, excludeDuplicates = false) => {
+    setArticles(prev => prev.map(article => {
+      if (excludeDuplicates && article.duplicateInfo?.isDuplicate) {
+        return { ...article, selected: false };
+      }
+      return { ...article, selected };
+    }));
   };
 
   const clearArticles = () => {
@@ -212,11 +230,23 @@ export const useRSSToJson = () => {
     setGeneratedJson("");
   };
 
+  const getVisibleArticles = () => {
+    if (hideDuplicates) {
+      return articles.filter(a => !a.duplicateInfo?.isDuplicate);
+    }
+    return articles;
+  };
+
   return {
     articles,
+    visibleArticles: getVisibleArticles(),
     generatedJson,
     isFetching,
     isGenerating,
+    isCheckingDuplicates: isChecking,
+    duplicatesCount,
+    hideDuplicates,
+    setHideDuplicates,
     progress,
     fetchArticlesFromFeeds,
     generateJsonFromArticles,

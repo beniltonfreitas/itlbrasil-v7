@@ -5,12 +5,15 @@ import { toast } from 'sonner';
 export interface JsonHistoryItem {
   id: string;
   user_id: string;
-  news_url: string;
+  name?: string;
+  news_url?: string;
   image_url?: string;
   generated_json: any;
+  articles_count?: number;
   status: 'processing' | 'done' | 'error';
   error_message?: string;
-  source_tool: 'reporter-ai' | 'json-generator' | 'jornalista-pro';
+  source_tool: 'reporter-ai' | 'json-generator' | 'jornalista-pro' | 'rss-to-json';
+  feed_ids?: string[];
   created_at: string;
 }
 
@@ -19,10 +22,15 @@ export const useJsonHistory = () => {
   const [history, setHistory] = useState<JsonHistoryItem[]>([]);
 
   const saveToHistory = async (
-    newsUrl: string,
     generatedJson: any,
-    sourceTools: 'reporter-ai' | 'json-generator' | 'jornalista-pro',
-    imageUrl?: string,
+    sourceTool: 'reporter-ai' | 'json-generator' | 'jornalista-pro' | 'rss-to-json',
+    options?: {
+      name?: string;
+      newsUrl?: string;
+      imageUrl?: string;
+      feedIds?: string[];
+      articlesCount?: number;
+    },
     status: 'processing' | 'done' | 'error' = 'done',
     errorMessage?: string
   ): Promise<string | null> => {
@@ -33,16 +41,19 @@ export const useJsonHistory = () => {
         return null;
       }
 
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from('json_generation_history')
         .insert({
           user_id: user.id,
-          news_url: newsUrl,
-          image_url: imageUrl,
+          name: options?.name,
+          news_url: options?.newsUrl,
+          image_url: options?.imageUrl,
           generated_json: generatedJson,
+          articles_count: options?.articlesCount || 0,
           status,
           error_message: errorMessage,
-          source_tool: sourceTools,
+          source_tool: sourceTool,
+          feed_ids: options?.feedIds || [],
         })
         .select()
         .single();
@@ -61,7 +72,10 @@ export const useJsonHistory = () => {
     }
   };
 
-  const loadHistory = async (sourceTool?: 'reporter-ai' | 'json-generator' | 'jornalista-pro', limit = 20) => {
+  const loadHistory = async (
+    sourceTool?: 'reporter-ai' | 'json-generator' | 'jornalista-pro' | 'rss-to-json', 
+    limit = 50
+  ) => {
     setIsLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -71,7 +85,7 @@ export const useJsonHistory = () => {
         return;
       }
 
-      let query = (supabase as any)
+      let query = supabase
         .from('json_generation_history')
         .select('*')
         .eq('user_id', user.id)
@@ -99,9 +113,9 @@ export const useJsonHistory = () => {
     }
   };
 
-  const deleteFromHistory = async (id: string) => {
+  const deleteFromHistory = async (id: string): Promise<boolean> => {
     try {
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from('json_generation_history')
         .delete()
         .eq('id', id);
@@ -123,10 +137,43 @@ export const useJsonHistory = () => {
     }
   };
 
+  const updateHistoryStatus = async (
+    id: string, 
+    status: 'processing' | 'done' | 'error',
+    errorMessage?: string
+  ): Promise<boolean> => {
+    try {
+      const updateData: any = { status };
+      if (errorMessage) {
+        updateData.error_message = errorMessage;
+      }
+
+      const { error } = await supabase
+        .from('json_generation_history')
+        .update(updateData)
+        .eq('id', id);
+
+      if (error) {
+        console.error('[useJsonHistory] Error updating history:', error);
+        return false;
+      }
+
+      // Update local state
+      setHistory(prev => prev.map(item => 
+        item.id === id ? { ...item, status, error_message: errorMessage } : item
+      ));
+      return true;
+    } catch (err) {
+      console.error('[useJsonHistory] Exception updating history:', err);
+      return false;
+    }
+  };
+
   return {
     saveToHistory,
     loadHistory,
     deleteFromHistory,
+    updateHistoryStatus,
     history,
     isLoading,
   };

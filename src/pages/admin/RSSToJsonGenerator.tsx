@@ -27,16 +27,17 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useRSSFeeds, useCreateRSSFeed, useUpdateRSSFeed, useDeleteRSSFeed } from "@/hooks/useRSSFeeds";
-import { useRSSToJson, FeedSelection, RSSArticle } from "@/hooks/useRSSToJson";
-import { useFeedValidation, ValidationResult } from "@/hooks/useFeedValidation";
+import { useRSSToJson, FeedSelection } from "@/hooks/useRSSToJson";
+import { useFeedValidation } from "@/hooks/useFeedValidation";
+import { useJsonHistory } from "@/hooks/useJsonHistory";
 import { 
   useRSSJsonSchedules, 
   useCreateRSSJsonSchedule, 
   useDeleteRSSJsonSchedule,
-  useToggleScheduleActive,
-  RSSJsonSchedule 
+  useToggleScheduleActive 
 } from "@/hooks/useRSSToJsonSchedules";
 import ArticlePreviewCard from "@/components/ArticlePreviewCard";
+import JsonHistoryPanel from "@/components/JsonHistoryPanel";
 import { 
   Rss, 
   Plus, 
@@ -56,7 +57,10 @@ import {
   CheckCircle,
   Timer,
   Calendar,
-  Zap
+  Zap,
+  History,
+  AlertTriangle,
+  EyeOff
 } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -75,11 +79,24 @@ const RSSToJsonGenerator = () => {
   const deleteSchedule = useDeleteRSSJsonSchedule();
   const toggleScheduleActive = useToggleScheduleActive();
   
+  // JSON History
+  const { 
+    history, 
+    isLoading: loadingHistory, 
+    loadHistory, 
+    deleteFromHistory 
+  } = useJsonHistory();
+  
   const {
     articles,
+    visibleArticles,
     generatedJson,
     isFetching,
     isGenerating,
+    isCheckingDuplicates,
+    duplicatesCount,
+    hideDuplicates,
+    setHideDuplicates,
     progress,
     fetchArticlesFromFeeds,
     generateJsonFromArticles,
@@ -95,6 +112,7 @@ const RSSToJsonGenerator = () => {
   const [newFeedName, setNewFeedName] = useState("");
   const [newFeedUrl, setNewFeedUrl] = useState("");
   const [isValidating, setIsValidating] = useState(false);
+  const [activeTab, setActiveTab] = useState("manual");
   
   // Schedule dialog
   const [showScheduleDialog, setShowScheduleDialog] = useState(false);
@@ -106,6 +124,13 @@ const RSSToJsonGenerator = () => {
   
   // Feed selections with quantities
   const [feedSelections, setFeedSelections] = useState<FeedSelection[]>([]);
+
+  // Load history when tab changes
+  useEffect(() => {
+    if (activeTab === 'history') {
+      loadHistory('rss-to-json');
+    }
+  }, [activeTab]);
 
   // Update selections when feeds change
   useEffect(() => {
@@ -243,7 +268,18 @@ const RSSToJsonGenerator = () => {
 
   const handleGenerateJson = async () => {
     const selectedArticles = articles.filter(a => a.selected);
-    await generateJsonFromArticles(selectedArticles);
+    const selectedFeedIds = feedSelections.filter(s => s.selected).map(s => s.feedId);
+    await generateJsonFromArticles(selectedArticles, selectedFeedIds);
+  };
+
+  const handleReimport = (json: any) => {
+    const jsonString = typeof json === 'string' ? json : JSON.stringify(json, null, 2);
+    setGeneratedJson(jsonString);
+    setActiveTab('manual');
+    toast({
+      title: "JSON carregado",
+      description: "O JSON foi carregado para edição"
+    });
   };
 
   const handleCreateSchedule = async () => {
@@ -349,7 +385,7 @@ const RSSToJsonGenerator = () => {
         </div>
       </div>
 
-      <Tabs defaultValue="manual" className="space-y-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList>
           <TabsTrigger value="manual">
             <Zap className="h-4 w-4 mr-2" />
@@ -358,6 +394,10 @@ const RSSToJsonGenerator = () => {
           <TabsTrigger value="schedules">
             <Calendar className="h-4 w-4 mr-2" />
             Agendamentos
+          </TabsTrigger>
+          <TabsTrigger value="history">
+            <History className="h-4 w-4 mr-2" />
+            Histórico
           </TabsTrigger>
         </TabsList>
 
@@ -501,7 +541,7 @@ const RSSToJsonGenerator = () => {
                 </CardTitle>
                 <CardDescription>
                   {articles.length > 0 
-                    ? `${articles.length} artigos • ${selectedArticlesCount} selecionados`
+                    ? `${visibleArticles.length} artigos${duplicatesCount > 0 ? ` (${duplicatesCount} duplicados)` : ''} • ${selectedArticlesCount} selecionados`
                     : 'Selecione feeds e clique em "Buscar Artigos"'
                   }
                 </CardDescription>
@@ -517,22 +557,51 @@ const RSSToJsonGenerator = () => {
                   <>
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex gap-2">
-                        <Button variant="outline" size="sm" onClick={() => selectAllArticles(true)}>
-                          Selecionar todos
+                        <Button variant="outline" size="sm" onClick={() => selectAllArticles(true, true)}>
+                          Selecionar válidos
                         </Button>
                         <Button variant="outline" size="sm" onClick={() => selectAllArticles(false)}>
                           Desmarcar todos
                         </Button>
                       </div>
-                      <Button variant="ghost" size="sm" onClick={clearArticles}>
-                        <RefreshCw className="h-4 w-4 mr-2" />
-                        Limpar
-                      </Button>
+                      <div className="flex items-center gap-3">
+                        {duplicatesCount > 0 && (
+                          <div className="flex items-center gap-2">
+                            <Switch
+                              checked={hideDuplicates}
+                              onCheckedChange={setHideDuplicates}
+                              id="hide-duplicates"
+                            />
+                            <Label htmlFor="hide-duplicates" className="text-xs flex items-center gap-1 cursor-pointer">
+                              <EyeOff className="h-3 w-3" />
+                              Ocultar duplicados
+                            </Label>
+                          </div>
+                        )}
+                        <Button variant="ghost" size="sm" onClick={clearArticles}>
+                          <RefreshCw className="h-4 w-4 mr-2" />
+                          Limpar
+                        </Button>
+                      </div>
                     </div>
+                    
+                    {isCheckingDuplicates && (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Verificando duplicados...
+                      </div>
+                    )}
+                    
+                    {duplicatesCount > 0 && (
+                      <div className="flex items-center gap-2 text-sm text-amber-600 mb-3 p-2 rounded-lg bg-amber-500/10">
+                        <AlertTriangle className="h-4 w-4" />
+                        {duplicatesCount} artigos duplicados detectados e desmarcados
+                      </div>
+                    )}
                     
                     <ScrollArea className="h-[350px] pr-4">
                       <div className="space-y-3">
-                        {articles.map(article => (
+                        {visibleArticles.map(article => (
                           <ArticlePreviewCard
                             key={article.id}
                             article={article}
@@ -681,6 +750,29 @@ const RSSToJsonGenerator = () => {
                   ))}
                 </div>
               )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="history" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <History className="h-5 w-5" />
+                Histórico de JSONs Gerados
+              </CardTitle>
+              <CardDescription>
+                Visualize, baixe ou reimporte JSONs gerados anteriormente
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <JsonHistoryPanel
+                history={history}
+                isLoading={loadingHistory}
+                onReimport={handleReimport}
+                onDelete={deleteFromHistory}
+                onRefresh={() => loadHistory('rss-to-json')}
+              />
             </CardContent>
           </Card>
         </TabsContent>
