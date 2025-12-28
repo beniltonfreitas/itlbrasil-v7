@@ -55,6 +55,41 @@
   line-height: 2.0 !important;
 }
 
+/* Sound Wave Animation for Audio Player */
+@keyframes soundwave {
+  0%, 100% { height: 4px; }
+  50% { height: 16px; }
+}
+
+@keyframes soundwave-mini {
+  0%, 100% { height: 3px; }
+  50% { height: 12px; }
+}
+
+.sound-wave-bar {
+  animation: soundwave 0.5s ease-in-out infinite;
+}
+
+.sound-wave-bar-mini {
+  animation: soundwave-mini 0.4s ease-in-out infinite;
+}
+
+/* Slide in from bottom animation */
+@keyframes slide-in-bottom {
+  0% {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in-bottom {
+  animation: slide-in-bottom 0.3s ease-out;
+}
+
 /* ITL BRASIL Portal Design System - Professional News Portal
 All colors MUST be HSL.
 */
