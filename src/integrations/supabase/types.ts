@@ -1875,6 +1875,151 @@ export type Database = {
           },
         ]
       }
+      noticias_ai_schedule_logs: {
+        Row: {
+          articles_failed: number | null
+          articles_imported: number | null
+          created_at: string | null
+          duration_ms: number | null
+          error_message: string | null
+          id: string
+          schedule_id: string | null
+          status: string
+        }
+        Insert: {
+          articles_failed?: number | null
+          articles_imported?: number | null
+          created_at?: string | null
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          schedule_id?: string | null
+          status: string
+        }
+        Update: {
+          articles_failed?: number | null
+          articles_imported?: number | null
+          created_at?: string | null
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          schedule_id?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "noticias_ai_schedule_logs_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "noticias_ai_schedules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      noticias_ai_schedules: {
+        Row: {
+          auto_publish: boolean | null
+          created_at: string | null
+          created_by: string | null
+          cron_expression: string | null
+          id: string
+          interval_minutes: number | null
+          is_active: boolean | null
+          last_run: string | null
+          max_articles_per_run: number | null
+          name: string
+          next_run: string | null
+          schedule_type: string | null
+          source_id: string | null
+          source_urls: string[]
+          updated_at: string | null
+        }
+        Insert: {
+          auto_publish?: boolean | null
+          created_at?: string | null
+          created_by?: string | null
+          cron_expression?: string | null
+          id?: string
+          interval_minutes?: number | null
+          is_active?: boolean | null
+          last_run?: string | null
+          max_articles_per_run?: number | null
+          name: string
+          next_run?: string | null
+          schedule_type?: string | null
+          source_id?: string | null
+          source_urls?: string[]
+          updated_at?: string | null
+        }
+        Update: {
+          auto_publish?: boolean | null
+          created_at?: string | null
+          created_by?: string | null
+          cron_expression?: string | null
+          id?: string
+          interval_minutes?: number | null
+          is_active?: boolean | null
+          last_run?: string | null
+          max_articles_per_run?: number | null
+          name?: string
+          next_run?: string | null
+          schedule_type?: string | null
+          source_id?: string | null
+          source_urls?: string[]
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "noticias_ai_schedules_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "noticias_ai_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      noticias_ai_sources: {
+        Row: {
+          badge: string
+          badge_color: string | null
+          created_at: string | null
+          created_by: string | null
+          domain_pattern: string
+          id: string
+          is_active: boolean | null
+          is_system: boolean | null
+          name: string
+          parsing_instructions: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          badge: string
+          badge_color?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          domain_pattern: string
+          id?: string
+          is_active?: boolean | null
+          is_system?: boolean | null
+          name: string
+          parsing_instructions?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          badge?: string
+          badge_color?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          domain_pattern?: string
+          id?: string
+          is_active?: boolean | null
+          is_system?: boolean | null
+          name?: string
+          parsing_instructions?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       platform_integrations: {
         Row: {
           access_token: string | null

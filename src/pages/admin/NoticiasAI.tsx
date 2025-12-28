@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Newspaper, Send, Trash2, Copy, Check, Loader2, Upload, Download, Eye, List, AlertCircle, History, Wand2 } from "lucide-react";
+import { Newspaper, Send, Trash2, Copy, Check, Loader2, Upload, Download, Eye, List, AlertCircle, History, Wand2, BarChart3, Settings, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,6 +15,9 @@ import { useCategories } from "@/hooks/useCategories";
 import { validateFirstParagraphBold, autoFixFirstParagraph } from "@/lib/textUtils";
 import ArticlePreviewDialog from "@/components/ArticlePreviewDialog";
 import NoticiasAIImportHistory from "@/components/NoticiasAIImportHistory";
+import NoticiasAIStatsDashboard from "@/components/NoticiasAIStatsDashboard";
+import NoticiasAISourcesManager from "@/components/NoticiasAISourcesManager";
+import NoticiasAIScheduleManager from "@/components/NoticiasAIScheduleManager";
 import { useCreateNoticiasAIImport, detectNewsSource } from "@/hooks/useNoticiasAIImports";
 
 interface GeneratedContent {
@@ -689,12 +692,24 @@ const NoticiasAI = () => {
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="cadastro">Cadastro Manual</TabsTrigger>
-              <TabsTrigger value="json">JSON (Repórter Pró)</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-6">
+              <TabsTrigger value="cadastro">Manual</TabsTrigger>
+              <TabsTrigger value="json">JSON</TabsTrigger>
               <TabsTrigger value="historico" className="flex items-center gap-1">
                 <History className="h-3 w-3" />
                 Histórico
+              </TabsTrigger>
+              <TabsTrigger value="stats" className="flex items-center gap-1">
+                <BarChart3 className="h-3 w-3" />
+                Estatísticas
+              </TabsTrigger>
+              <TabsTrigger value="sources" className="flex items-center gap-1">
+                <Settings className="h-3 w-3" />
+                Fontes
+              </TabsTrigger>
+              <TabsTrigger value="schedules" className="flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                Agendamentos
               </TabsTrigger>
             </TabsList>
             <TabsContent value="cadastro" className="mt-4">
@@ -705,6 +720,15 @@ const NoticiasAI = () => {
             </TabsContent>
             <TabsContent value="historico" className="mt-4">
               <NoticiasAIImportHistory />
+            </TabsContent>
+            <TabsContent value="stats" className="mt-4">
+              <NoticiasAIStatsDashboard />
+            </TabsContent>
+            <TabsContent value="sources" className="mt-4">
+              <NoticiasAISourcesManager />
+            </TabsContent>
+            <TabsContent value="schedules" className="mt-4">
+              <NoticiasAIScheduleManager />
             </TabsContent>
           </Tabs>
         </CardContent>
