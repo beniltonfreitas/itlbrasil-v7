@@ -1,10 +1,12 @@
 import { useState, useRef } from "react";
-import { Newspaper, Send, Trash2, Copy, Check, Loader2, Upload, Download, Eye, List, AlertCircle } from "lucide-react";
+import { Newspaper, Send, Trash2, Copy, Check, Loader2, Upload, Download, Eye, List, AlertCircle, History, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { uploadImageToStorage } from "@/lib/imageUpload";
@@ -12,6 +14,8 @@ import { useCreateArticle } from "@/hooks/useArticleMutations";
 import { useCategories } from "@/hooks/useCategories";
 import { validateFirstParagraphBold, autoFixFirstParagraph } from "@/lib/textUtils";
 import ArticlePreviewDialog from "@/components/ArticlePreviewDialog";
+import NoticiasAIImportHistory from "@/components/NoticiasAIImportHistory";
+import { useCreateNoticiasAIImport, detectNewsSource } from "@/hooks/useNoticiasAIImports";
 
 interface GeneratedContent {
   cadastroManual: {
@@ -69,6 +73,9 @@ const NoticiasAI = () => {
   const [activeTab, setActiveTab] = useState("cadastro");
   const imageInputRef = useRef<HTMLInputElement>(null);
   
+  // Auto-correction toggle (enabled by default)
+  const [autoCorrectEnabled, setAutoCorrectEnabled] = useState(true);
+  
   // Batch mode state
   const [isBatchMode, setIsBatchMode] = useState(false);
   const [batchProgress, setBatchProgress] = useState<{ current: number; total: number } | null>(null);
@@ -79,6 +86,7 @@ const NoticiasAI = () => {
 
   const createArticle = useCreateArticle();
   const { data: categories } = useCategories();
+  const createImportLog = useCreateNoticiasAIImport();
 
   // Detect URLs in input for batch mode
   const detectUrls = (text: string): string[] => {
@@ -118,7 +126,7 @@ const NoticiasAI = () => {
     return found.id;
   };
 
-  const handleImportNews = async (autoFix: boolean = false) => {
+  const handleImportNews = async () => {
     const jsonData = generatedContent.json;
     if (!jsonData?.noticias?.length) {
       toast.error("Nenhuma notícia para importar");
@@ -128,28 +136,26 @@ const NoticiasAI = () => {
     setIsImporting(true);
     let successCount = 0;
     let errorCount = 0;
-    let formatWarnings = 0;
+    let formatCorrectedCount = 0;
 
     try {
       for (const noticia of jsonData.noticias) {
         try {
           const categoryId = findCategoryId(noticia.categoria);
           
-          // Validate first paragraph
+          // Validate first paragraph and auto-correct if enabled
           let content = noticia.conteudo;
+          let wasFormatCorrected = false;
           const validation = validateFirstParagraphBold(content);
           
-          if (!validation.valid) {
-            formatWarnings++;
-            if (autoFix) {
-              content = autoFixFirstParagraph(content);
-              console.log('✅ Auto-corrigido primeiro parágrafo para:', noticia.titulo);
-            } else {
-              console.warn('⚠️ Artigo sem lide em negrito:', noticia.titulo);
-            }
+          if (!validation.valid && autoCorrectEnabled) {
+            content = autoFixFirstParagraph(content);
+            wasFormatCorrected = true;
+            formatCorrectedCount++;
+            console.log('✅ Auto-corrigido primeiro parágrafo para:', noticia.titulo);
           }
           
-          await createArticle.mutateAsync({
+          const article = await createArticle.mutateAsync({
             title: noticia.titulo,
             slug: noticia.slug,
             excerpt: noticia.resumo,
@@ -166,17 +172,46 @@ const NoticiasAI = () => {
             published_at: new Date().toISOString(),
           });
           
+          // Log import to history
+          const sourceInfo = noticia.fonte ? detectNewsSource(noticia.fonte) : null;
+          await createImportLog.mutateAsync({
+            article_id: article.id,
+            article_title: noticia.titulo,
+            article_slug: noticia.slug,
+            source_url: noticia.fonte || undefined,
+            source_name: sourceInfo?.name || undefined,
+            import_type: isMultipleUrls ? 'batch' : 'single',
+            format_corrected: wasFormatCorrected,
+            status: 'success',
+          });
+          
           successCount++;
         } catch (err) {
           console.error("Erro ao importar notícia:", noticia.titulo, err);
           errorCount++;
+          
+          // Log failed import
+          try {
+            await createImportLog.mutateAsync({
+              article_id: '',
+              article_title: noticia.titulo,
+              article_slug: noticia.slug || 'erro',
+              source_url: noticia.fonte || undefined,
+              import_type: isMultipleUrls ? 'batch' : 'single',
+              format_corrected: false,
+              status: 'error',
+              error_message: err instanceof Error ? err.message : 'Erro desconhecido',
+            });
+          } catch (logErr) {
+            console.error("Erro ao registrar falha:", logErr);
+          }
         }
       }
 
       if (successCount > 0) {
         let message = `${successCount} notícia(s) importada(s) com sucesso!`;
-        if (formatWarnings > 0 && autoFix) {
-          message += ` (${formatWarnings} corrigida(s) automaticamente)`;
+        if (formatCorrectedCount > 0) {
+          message += ` (${formatCorrectedCount} com lide corrigido)`;
         }
         toast.success(message);
         handleClear();
@@ -185,10 +220,6 @@ const NoticiasAI = () => {
       
       if (errorCount > 0) {
         toast.error(`${errorCount} notícia(s) falharam na importação`);
-      }
-      
-      if (formatWarnings > 0 && !autoFix) {
-        toast.warning(`${formatWarnings} artigo(s) sem o lide em negrito (padrão Agência Brasil)`);
       }
     } catch (error) {
       console.error("Erro geral na importação:", error);
@@ -414,6 +445,19 @@ const NoticiasAI = () => {
 
     return (
       <div className="space-y-4">
+        {/* Auto-correction toggle */}
+        <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 border">
+          <Checkbox 
+            id="auto-correct"
+            checked={autoCorrectEnabled}
+            onCheckedChange={(checked) => setAutoCorrectEnabled(checked as boolean)}
+          />
+          <Label htmlFor="auto-correct" className="text-sm flex items-center gap-2 cursor-pointer">
+            <Wand2 className="h-4 w-4 text-primary" />
+            Auto-corrigir lide em negrito (padrão Agência Brasil)
+          </Label>
+        </div>
+        
         {/* Format warning banner */}
         {formatIssues.length > 0 && (
           <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-400 text-sm flex items-start gap-2">
@@ -421,8 +465,9 @@ const NoticiasAI = () => {
             <div>
               <p className="font-medium">{formatIssues.length} artigo(s) sem o lide em negrito</p>
               <p className="text-xs mt-1 opacity-75">
-                O padrão Agência Brasil exige que o primeiro parágrafo esteja em negrito. 
-                Use "Visualizar" para verificar ou importe com correção automática.
+                {autoCorrectEnabled 
+                  ? "A correção será aplicada automaticamente ao importar."
+                  : "Ative a auto-correção acima para corrigir automaticamente."}
               </p>
             </div>
           </div>
@@ -443,30 +488,9 @@ const NoticiasAI = () => {
                 Visualizar
               </Button>
               
-              {formatIssues.length > 0 && (
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  onClick={() => handleImportNews(true)}
-                  disabled={isImporting}
-                >
-                  {isImporting ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Importando...
-                    </>
-                  ) : (
-                    <>
-                      <Download className="h-4 w-4 mr-2" />
-                      Importar com Correção
-                    </>
-                  )}
-                </Button>
-              )}
-              
               <Button
                 size="sm"
-                onClick={() => handleImportNews(false)}
+                onClick={() => handleImportNews()}
                 disabled={isImporting}
               >
                 {isImporting ? (
@@ -478,6 +502,11 @@ const NoticiasAI = () => {
                   <>
                     <Download className="h-4 w-4 mr-2" />
                     Importar Notícias
+                    {autoCorrectEnabled && formatIssues.length > 0 && (
+                      <Badge variant="secondary" className="ml-2 text-xs">
+                        +correção
+                      </Badge>
+                    )}
                   </>
                 )}
               </Button>
@@ -660,15 +689,22 @@ const NoticiasAI = () => {
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="cadastro">Cadastro Manual</TabsTrigger>
               <TabsTrigger value="json">JSON (Repórter Pró)</TabsTrigger>
+              <TabsTrigger value="historico" className="flex items-center gap-1">
+                <History className="h-3 w-3" />
+                Histórico
+              </TabsTrigger>
             </TabsList>
             <TabsContent value="cadastro" className="mt-4">
               {renderCadastroManual()}
             </TabsContent>
             <TabsContent value="json" className="mt-4">
               {renderJSON()}
+            </TabsContent>
+            <TabsContent value="historico" className="mt-4">
+              <NoticiasAIImportHistory />
             </TabsContent>
           </Tabs>
         </CardContent>
@@ -733,7 +769,7 @@ const NoticiasAI = () => {
           currentIndex={previewIndex}
           isOpen={previewOpen}
           onClose={() => setPreviewOpen(false)}
-          onConfirmImport={() => handleImportNews(false)}
+          onConfirmImport={() => handleImportNews()}
           onNavigate={setPreviewIndex}
           isImporting={isImporting}
         />

@@ -58,11 +58,87 @@ serve(async (req) => {
       setTimeout(() => reject(new Error('Timeout: processamento excedeu 50 segundos')), 50000)
     );
 
+    // Source detection for specific prompts
+    const detectSource = (url: string): string => {
+      const urlLower = url.toLowerCase();
+      if (urlLower.includes('agenciabrasil.ebc.com.br')) return 'AGENCIA_BRASIL';
+      if (urlLower.includes('g1.globo.com')) return 'G1';
+      if (urlLower.includes('folha.uol.com.br')) return 'FOLHA';
+      if (urlLower.includes('uol.com.br')) return 'UOL';
+      if (urlLower.includes('estadao.com.br')) return 'ESTADAO';
+      if (urlLower.includes('cnnbrasil.com.br')) return 'CNN';
+      if (urlLower.includes('bbc.com')) return 'BBC';
+      if (urlLower.includes('r7.com')) return 'R7';
+      if (urlLower.includes('terra.com.br')) return 'TERRA';
+      return 'GENERIC';
+    };
+
+    const getSourceInstructions = (source: string): string => {
+      const templates: Record<string, string> = {
+        AGENCIA_BRASIL: `
+FONTE: Agência Brasil (EBC)
+- Manter estilo oficial e institucional
+- Preservar citações de autoridades governamentais
+- O lide (primeiro parágrafo) DEVE estar em negrito: <p><strong>...</strong></p>
+- Creditar imagens com "Agência Brasil" ou fotógrafo específico`,
+        G1: `
+FONTE: G1 (Globo)
+- Adaptar títulos sensacionalistas para tom informativo neutro
+- Remover elementos de "saiba mais", links internos e CTAs
+- Creditar "G1" ou "TV Globo" nas imagens
+- Ignorar vídeos incorporados, focar no texto`,
+        FOLHA: `
+FONTE: Folha de S.Paulo
+- Manter tom analítico e contextualizador
+- Preservar dados estatísticos e citações de fontes
+- Creditar "Folhapress" ou fotógrafo específico
+- Remover marcadores de paywall/assinatura`,
+        UOL: `
+FONTE: UOL
+- Simplificar estrutura (UOL usa muitos boxes e widgets)
+- Remover elementos de redes sociais e propagandas
+- Creditar agência ou fotógrafo original
+- Focar no conteúdo principal`,
+        ESTADAO: `
+FONTE: Estadão
+- Preservar análises e contexto histórico
+- Manter citações de especialistas e fontes oficiais
+- Creditar "Estadão Conteúdo" ou fotógrafo
+- Remover elementos de assinatura/paywall`,
+        CNN: `
+FONTE: CNN Brasil
+- Adaptar estilo direto para padrão jornalístico brasileiro
+- Preservar breaking news markers quando relevante
+- Creditar "CNN Brasil" nas imagens`,
+        BBC: `
+FONTE: BBC
+- Adaptar estilo britânico para português brasileiro
+- Manter contexto internacional e explicações
+- Creditar "BBC" ou "Getty Images" quando aplicável`,
+        R7: `
+FONTE: R7 (Record)
+- Extrair conteúdo principal ignorando elementos visuais excessivos
+- Creditar "R7" ou "Record TV" nas imagens`,
+        TERRA: `
+FONTE: Terra
+- Extrair conteúdo do artigo principal
+- Remover widgets e elementos de navegação
+- Creditar fonte original quando indicada`,
+        GENERIC: `
+FONTE: Externa (genérica)
+- Extrair conteúdo principal ignorando navegação, ads e widgets
+- Identificar autor e data de publicação quando disponível
+- Preservar imagens com créditos se disponíveis`
+      };
+      return templates[source] || templates.GENERIC;
+    };
+
     // Processar todos os itens em paralelo com Promise.allSettled
     console.log('[reporter-batch] Iniciando processamento paralelo');
     const processItem = async (item: BatchItem) => {
       const itemStartTime = Date.now();
-      console.log(`[reporter-batch] Processando: ${item.newsUrl}`);
+      const source = detectSource(item.newsUrl);
+      console.log(`[reporter-batch] Processando: ${item.newsUrl} (fonte: ${source})`);
 
       try {
         // Fetch HTML da notícia
@@ -80,8 +156,12 @@ serve(async (req) => {
         const html = await htmlResponse.text();
         console.log(`[reporter-batch] HTML obtido de ${item.newsUrl} (${html.length} chars)`);
 
-        // Prompt para Lovable AI (Gemini 2.5 Flash)
+        // Prompt para Lovable AI (Gemini 2.5 Flash) with source-specific instructions
+        const sourceInstructions = getSourceInstructions(source);
+        
         const systemPrompt = `Você é o Repórter Pró, gerador de JSON Premium v2.1 para o portal ITL Brasil.
+
+${sourceInstructions}
 
 REGRAS CRÍTICAS DE FORMATAÇÃO:
 1. imagem DEVE ser um OBJETO com as chaves: hero, og, card, alt, credito
@@ -95,6 +175,9 @@ REGRAS CRÍTICAS DE FORMATAÇÃO:
 9. fonte: URL completa da matéria original
 10. conteudo: HTML semântico com <p>, <h2>, <blockquote>, etc.
 
+IMPORTANTE: O PRIMEIRO PARÁGRAFO (LIDE) DEVE ESTAR EM NEGRITO:
+<p><strong>Lide com informação principal...</strong></p>
+
 FORMATO DE SAÍDA OBRIGATÓRIO:
 {
   "noticias": [{
@@ -102,7 +185,7 @@ FORMATO DE SAÍDA OBRIGATÓRIO:
     "titulo": "string",
     "slug": "string",
     "resumo": "string (max 160 chars)",
-    "conteudo": "string HTML",
+    "conteudo": "string HTML com primeiro parágrafo em <strong>",
     "fonte": "url completa",
     "imagem": {
       "hero": "https://...",
