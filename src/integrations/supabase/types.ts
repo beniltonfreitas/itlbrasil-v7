@@ -1822,6 +1822,59 @@ export type Database = {
         }
         Relationships: []
       }
+      noticias_ai_imports: {
+        Row: {
+          article_id: string | null
+          article_slug: string
+          article_title: string
+          created_at: string | null
+          error_message: string | null
+          format_corrected: boolean | null
+          id: string
+          import_type: string | null
+          imported_by: string | null
+          source_name: string | null
+          source_url: string | null
+          status: string | null
+        }
+        Insert: {
+          article_id?: string | null
+          article_slug: string
+          article_title: string
+          created_at?: string | null
+          error_message?: string | null
+          format_corrected?: boolean | null
+          id?: string
+          import_type?: string | null
+          imported_by?: string | null
+          source_name?: string | null
+          source_url?: string | null
+          status?: string | null
+        }
+        Update: {
+          article_id?: string | null
+          article_slug?: string
+          article_title?: string
+          created_at?: string | null
+          error_message?: string | null
+          format_corrected?: boolean | null
+          id?: string
+          import_type?: string | null
+          imported_by?: string | null
+          source_name?: string | null
+          source_url?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "noticias_ai_imports_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       platform_integrations: {
         Row: {
           access_token: string | null
