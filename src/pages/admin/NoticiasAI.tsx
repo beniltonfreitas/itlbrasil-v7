@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Newspaper, Send, Trash2, Copy, Check, Loader2, Upload, Download } from "lucide-react";
+import { Newspaper, Send, Trash2, Copy, Check, Loader2, Upload, Download, Eye, List, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +10,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { uploadImageToStorage } from "@/lib/imageUpload";
 import { useCreateArticle } from "@/hooks/useArticleMutations";
 import { useCategories } from "@/hooks/useCategories";
+import { validateFirstParagraphBold, autoFixFirstParagraph } from "@/lib/textUtils";
+import ArticlePreviewDialog from "@/components/ArticlePreviewDialog";
 
 interface GeneratedContent {
   cadastroManual: {
@@ -66,11 +68,31 @@ const NoticiasAI = () => {
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("cadastro");
   const imageInputRef = useRef<HTMLInputElement>(null);
+  
+  // Batch mode state
+  const [isBatchMode, setIsBatchMode] = useState(false);
+  const [batchProgress, setBatchProgress] = useState<{ current: number; total: number } | null>(null);
+  
+  // Preview dialog state
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewIndex, setPreviewIndex] = useState(0);
 
   const createArticle = useCreateArticle();
   const { data: categories } = useCategories();
 
-  const detectInputType = (text: string): "EXCLUSIVA" | "CADASTRO_MANUAL" | "JSON" | "LINK" | "TEXT" => {
+  // Detect URLs in input for batch mode
+  const detectUrls = (text: string): string[] => {
+    return text
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line.startsWith('http://') || line.startsWith('https://'));
+  };
+
+  const detectedUrls = detectUrls(input);
+  const isMultipleUrls = detectedUrls.length > 1;
+
+  const detectInputType = (text: string): "EXCLUSIVA" | "CADASTRO_MANUAL" | "JSON" | "LINK" | "TEXT" | "BATCH" => {
+    if (isMultipleUrls) return "BATCH";
     const trimmed = text.trim().toUpperCase();
     if (trimmed.startsWith("EXCLUSIVA")) return "EXCLUSIVA";
     if (trimmed.startsWith("CADASTRO MANUAL")) return "CADASTRO_MANUAL";
@@ -96,7 +118,7 @@ const NoticiasAI = () => {
     return found.id;
   };
 
-  const handleImportNews = async () => {
+  const handleImportNews = async (autoFix: boolean = false) => {
     const jsonData = generatedContent.json;
     if (!jsonData?.noticias?.length) {
       toast.error("Nenhuma notícia para importar");
@@ -106,17 +128,32 @@ const NoticiasAI = () => {
     setIsImporting(true);
     let successCount = 0;
     let errorCount = 0;
+    let formatWarnings = 0;
 
     try {
       for (const noticia of jsonData.noticias) {
         try {
           const categoryId = findCategoryId(noticia.categoria);
           
+          // Validate first paragraph
+          let content = noticia.conteudo;
+          const validation = validateFirstParagraphBold(content);
+          
+          if (!validation.valid) {
+            formatWarnings++;
+            if (autoFix) {
+              content = autoFixFirstParagraph(content);
+              console.log('✅ Auto-corrigido primeiro parágrafo para:', noticia.titulo);
+            } else {
+              console.warn('⚠️ Artigo sem lide em negrito:', noticia.titulo);
+            }
+          }
+          
           await createArticle.mutateAsync({
             title: noticia.titulo,
             slug: noticia.slug,
             excerpt: noticia.resumo,
-            content: noticia.conteudo,
+            content: content,
             category_id: categoryId,
             featured_image: noticia.imagem?.hero || null,
             featured_image_alt: noticia.imagem?.alt || null,
@@ -137,12 +174,21 @@ const NoticiasAI = () => {
       }
 
       if (successCount > 0) {
-        toast.success(`${successCount} notícia(s) importada(s) com sucesso!`);
+        let message = `${successCount} notícia(s) importada(s) com sucesso!`;
+        if (formatWarnings > 0 && autoFix) {
+          message += ` (${formatWarnings} corrigida(s) automaticamente)`;
+        }
+        toast.success(message);
         handleClear();
+        setPreviewOpen(false);
       }
       
       if (errorCount > 0) {
         toast.error(`${errorCount} notícia(s) falharam na importação`);
+      }
+      
+      if (formatWarnings > 0 && !autoFix) {
+        toast.warning(`${formatWarnings} artigo(s) sem o lide em negrito (padrão Agência Brasil)`);
       }
     } catch (error) {
       console.error("Erro geral na importação:", error);
@@ -152,14 +198,69 @@ const NoticiasAI = () => {
     }
   };
 
+  const handleBatchProcess = async () => {
+    const urls = detectedUrls;
+    
+    if (urls.length === 0) {
+      toast.error("Nenhuma URL válida encontrada");
+      return;
+    }
+    
+    if (urls.length > 10) {
+      toast.error("Máximo de 10 URLs por vez");
+      return;
+    }
+
+    setIsLoading(true);
+    setBatchProgress({ current: 0, total: urls.length });
+
+    try {
+      const { data, error } = await supabase.functions.invoke("reporter-batch", {
+        body: { 
+          items: urls.map(url => ({ newsUrl: url }))
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.json) {
+        setGeneratedContent({ cadastroManual: null, json: data.json });
+        setActiveTab("json");
+        
+        const successCount = data.json?.noticias?.length || 0;
+        const failedCount = data.failed?.length || 0;
+        
+        if (successCount > 0) {
+          toast.success(`${successCount} notícia(s) processada(s) com sucesso!`);
+        }
+        
+        if (failedCount > 0) {
+          toast.warning(`${failedCount} URL(s) falharam no processamento`);
+        }
+      }
+    } catch (error) {
+      console.error("Erro no processamento em lote:", error);
+      toast.error("Erro ao processar URLs em lote");
+    } finally {
+      setIsLoading(false);
+      setBatchProgress(null);
+    }
+  };
+
   const handleGenerate = async () => {
     if (!input.trim()) {
       toast.error("Digite ou cole o conteúdo da notícia");
       return;
     }
 
-    setIsLoading(true);
     const inputType = detectInputType(input);
+    
+    // Use batch processing for multiple URLs
+    if (inputType === "BATCH") {
+      return handleBatchProcess();
+    }
+
+    setIsLoading(true);
 
     try {
       const { data, error } = await supabase.functions.invoke("noticias-ai", {
@@ -197,6 +298,7 @@ const NoticiasAI = () => {
   const handleClear = () => {
     setInput("");
     setGeneratedContent({ cadastroManual: null, json: null });
+    setBatchProgress(null);
   };
 
   // Handler para upload de imagem que insere URL no campo de texto
@@ -306,28 +408,80 @@ const NoticiasAI = () => {
 
     const jsonString = JSON.stringify(data, null, 2);
     const hasNoticias = data.noticias && data.noticias.length > 0;
+    
+    // Check if any article has format issues
+    const formatIssues = data.noticias?.filter(n => !validateFirstParagraphBold(n.conteudo).valid) || [];
 
     return (
       <div className="space-y-4">
-        <div className="flex justify-end gap-2">
+        {/* Format warning banner */}
+        {formatIssues.length > 0 && (
+          <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-400 text-sm flex items-start gap-2">
+            <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="font-medium">{formatIssues.length} artigo(s) sem o lide em negrito</p>
+              <p className="text-xs mt-1 opacity-75">
+                O padrão Agência Brasil exige que o primeiro parágrafo esteja em negrito. 
+                Use "Visualizar" para verificar ou importe com correção automática.
+              </p>
+            </div>
+          </div>
+        )}
+        
+        <div className="flex justify-end gap-2 flex-wrap">
           {hasNoticias && (
-            <Button
-              size="sm"
-              onClick={handleImportNews}
-              disabled={isImporting}
-            >
-              {isImporting ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Importando...
-                </>
-              ) : (
-                <>
-                  <Download className="h-4 w-4 mr-2" />
-                  Importar Notícias
-                </>
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setPreviewIndex(0);
+                  setPreviewOpen(true);
+                }}
+              >
+                <Eye className="h-4 w-4 mr-2" />
+                Visualizar
+              </Button>
+              
+              {formatIssues.length > 0 && (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => handleImportNews(true)}
+                  disabled={isImporting}
+                >
+                  {isImporting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Importando...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="h-4 w-4 mr-2" />
+                      Importar com Correção
+                    </>
+                  )}
+                </Button>
               )}
-            </Button>
+              
+              <Button
+                size="sm"
+                onClick={() => handleImportNews(false)}
+                disabled={isImporting}
+              >
+                {isImporting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Importando...
+                  </>
+                ) : (
+                  <>
+                    <Download className="h-4 w-4 mr-2" />
+                    Importar Notícias
+                  </>
+                )}
+              </Button>
+            </>
           )}
           <Button
             variant="outline"
@@ -391,7 +545,34 @@ const NoticiasAI = () => {
             <Badge variant="outline" className="cursor-pointer hover:bg-primary/10" onClick={() => setInput("JSON\n\n")}>
               JSON
             </Badge>
+            <Badge 
+              variant={isMultipleUrls ? "default" : "outline"} 
+              className={`cursor-pointer ${isMultipleUrls ? "bg-blue-600 hover:bg-blue-700" : "hover:bg-primary/10"}`}
+              onClick={() => {
+                setIsBatchMode(!isBatchMode);
+                if (!isBatchMode) {
+                  setInput("");
+                }
+              }}
+            >
+              <List className="h-3 w-3 mr-1" />
+              LOTE {isMultipleUrls && `(${detectedUrls.length})`}
+            </Badge>
           </div>
+
+          {/* Batch mode hint */}
+          {(isBatchMode || isMultipleUrls) && (
+            <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/30 text-blue-700 dark:text-blue-400 text-sm">
+              <p className="font-medium flex items-center gap-2">
+                <List className="h-4 w-4" />
+                Modo Lote Ativo
+              </p>
+              <p className="text-xs mt-1 opacity-75">
+                Cole até 10 URLs (uma por linha) para processar em paralelo.
+                {detectedUrls.length > 0 && ` Detectadas: ${detectedUrls.length} URL(s)`}
+              </p>
+            </div>
+          )}
 
           {/* Botão Enviar Imagem */}
           <div className="flex items-center gap-2 mb-2">
@@ -425,7 +606,11 @@ const NoticiasAI = () => {
           </div>
           
           <Textarea
-            placeholder="Digite EXCLUSIVA, CADASTRO MANUAL, JSON ou cole a notícia completa..."
+            placeholder={
+              isBatchMode || isMultipleUrls
+                ? "Cole até 10 URLs (uma por linha):\nhttps://example.com/noticia-1\nhttps://example.com/noticia-2\nhttps://example.com/noticia-3"
+                : "Digite EXCLUSIVA, CADASTRO MANUAL, JSON ou cole a notícia completa..."
+            }
             value={input}
             onChange={(e) => setInput(e.target.value)}
             className="min-h-[200px] text-sm"
@@ -440,7 +625,14 @@ const NoticiasAI = () => {
               {isLoading ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Processando...
+                  {batchProgress 
+                    ? `Processando ${batchProgress.current}/${batchProgress.total}...`
+                    : "Processando..."}
+                </>
+              ) : isMultipleUrls ? (
+                <>
+                  <List className="h-4 w-4 mr-2" />
+                  Processar {detectedUrls.length} URLs
                 </>
               ) : (
                 <>
@@ -501,13 +693,51 @@ const NoticiasAI = () => {
             </p>
           </div>
           <div>
-            <h4 className="font-semibold text-green-600">🟢 JSON / LINK</h4>
+            <h4 className="font-semibold text-blue-600">🔵 JSON</h4>
             <p className="text-muted-foreground">
-              Comece com "JSON" ou cole um link de matéria para gerar o formato Repórter Pró.
+              Comece com "JSON" para gerar apenas o formato JSON para importação.
+            </p>
+          </div>
+          <div>
+            <h4 className="font-semibold text-green-600">🟢 LINK</h4>
+            <p className="text-muted-foreground">
+              Cole uma URL de notícia para extrair e processar automaticamente.
+            </p>
+          </div>
+          <div>
+            <h4 className="font-semibold text-purple-600">🟣 LOTE (Múltiplas URLs)</h4>
+            <p className="text-muted-foreground">
+              Cole até 10 URLs (uma por linha) para processar em paralelo. O sistema detecta automaticamente quando há múltiplas URLs.
+            </p>
+          </div>
+          <div>
+            <h4 className="font-semibold text-gray-600">⚪ TEXTO</h4>
+            <p className="text-muted-foreground">
+              Cole o texto completo da notícia para processamento e formatação.
+            </p>
+          </div>
+          <div className="pt-4 border-t">
+            <h4 className="font-semibold text-foreground">📰 Padrão Agência Brasil</h4>
+            <p className="text-muted-foreground">
+              As notícias são formatadas seguindo o padrão jornalístico da Agência Brasil: 
+              lide em negrito, citações em blockquote, intertítulos com h2, listas com ul/li.
             </p>
           </div>
         </CardContent>
       </Card>
+
+      {/* Preview Dialog */}
+      {generatedContent.json?.noticias && (
+        <ArticlePreviewDialog
+          articles={generatedContent.json.noticias}
+          currentIndex={previewIndex}
+          isOpen={previewOpen}
+          onClose={() => setPreviewOpen(false)}
+          onConfirmImport={() => handleImportNews(false)}
+          onNavigate={setPreviewIndex}
+          isImporting={isImporting}
+        />
+      )}
     </div>
   );
 };
