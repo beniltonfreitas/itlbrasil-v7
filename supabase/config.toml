@@ -1,11 +1,8 @@
 project_id = "kzbseckjublnjrxzktux"
 
 [auth]
-# Tempo de expiração do JWT em segundos (1 hora)
 jwt_expiry = 3600
-# Habilitar rotação de refresh tokens
 refresh_token_rotation_enabled = true
-# Tempo de inatividade máxima (24 horas)
 session_timeout = 86400
 
 [functions.reporter-batch]
@@ -62,6 +59,8 @@ verify_jwt = false
 [functions.noticias-ai]
 verify_jwt = true
 
-# Cron job for reporter-worker: Run every 2 minutes
+[functions.rss-to-json]
+verify_jwt = true
+
 [cron."reporter-worker"]
 schedule = "*/2 * * * *"
