@@ -182,45 +182,38 @@ const AdminLayout = () => {
   };
 
   const allNavigation: NavigationItem[] = [
-    // 1. Dashboard
+    // 1. Dashboard (link direto)
+    { name: "Dashboard", href: "/admin", icon: LayoutDashboard, permission: "dashboard" },
+    
+    // 2. +Funções (grupo)
     { 
-      name: "Dashboard", 
-      icon: LayoutDashboard, 
-      permission: "dashboard-group",
+      name: "+Funções", 
+      icon: PlusCircle, 
+      permission: "funcoes-group",
       type: "group",
-      key: "dashboard",
+      key: "funcoes",
       submenu: [
-        { name: "Visão Geral", href: "/admin", icon: LayoutDashboard, permission: "dashboard" },
-        { name: "Ativar VPN", href: "/admin/vpn", icon: Shield, permission: "vpn" },
+        { 
+          name: "Repórter Pró", 
+          href: "https://chatgpt.com/share/6901212f-cb00-8002-8684-d71080179ed4", 
+          icon: ExternalLink, 
+          permission: "reporter-pro",
+          external: true 
+        },
+        { name: "Enviar Imagem", href: "/admin/upload-imagem", icon: Image, permission: "upload-image" },
+        { name: "Web Stories", href: "/admin/webstories", icon: BookOpen, permission: "webstories" },
+        { name: "Importar em Massa", href: "/admin/bulk-import", icon: Upload, permission: "bulk-import" },
       ]
     },
     
-    // 2. Repórter Pró (menu principal)
-    { 
-      name: "Repórter Pró", 
-      href: "https://chatgpt.com/share/6901212f-cb00-8002-8684-d71080179ed4", 
-      icon: ExternalLink, 
-      permission: "reporter-pro",
-      external: true 
-    },
-    
-    // 3. Enviar Imagem (destaque)
-    { name: "Enviar Imagem", href: "/admin/upload-imagem", icon: Image, permission: "upload-image", highlight: true },
-    
-    // 3.5. Notícias AI
+    // 3. Notícias AI
     { name: "Notícias AI", href: "/admin/noticias-ai", icon: Newspaper, permission: "noticias-ai" },
     
-    // 3.6. Web Stories (abaixo de Notícias AI)
-    { name: "Web Stories", href: "/admin/webstories", icon: BookOpen, permission: "webstories" },
-    
     // 4. Cadastrar Notícias
-    { name: "Cadastrar Notícias", href: "/admin/articles/new", icon: PlusCircle, permission: "article-editor" },
+    { name: "Cadastrar Notícias", href: "/admin/articles/new", icon: Wrench, permission: "article-editor" },
     
     // 5. Todas as Notícias
     { name: "Todas as Notícias", href: "/admin/articles", icon: FileText, permission: "articles" },
-    
-    // 6. Importar em Massa
-    { name: "Importar em Massa", href: "/admin/bulk-import", icon: Upload, permission: "bulk-import" },
     
     // 7. Em Breve
     { 
