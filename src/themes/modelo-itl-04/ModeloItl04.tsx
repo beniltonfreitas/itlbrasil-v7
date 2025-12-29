@@ -26,6 +26,7 @@ import Category from '@/pages/Category';
 import About from '@/pages/About';
 import Contact from '@/pages/Contact';
 import NotFound from '@/pages/NotFound';
+import { AccessibilityToolbar } from '@/components/AccessibilityToolbar';
 
 const HomePage: React.FC = () => {
   const { data: articles, isLoading } = useArticles({ limit: 12 });
@@ -208,6 +209,8 @@ export const ModeloItl04: React.FC = () => {
       </main>
 
       <Footer04 />
+      
+      <AccessibilityToolbar />
     </div>
   );
 };
