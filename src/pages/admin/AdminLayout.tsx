@@ -53,7 +53,8 @@ import {
   CloudCog,
   Building2,
   Search,
-  X
+  X,
+  FolderOpen
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -185,7 +186,10 @@ const AdminLayout = () => {
     // 1. Dashboard (link direto)
     { name: "Dashboard", href: "/admin", icon: LayoutDashboard, permission: "dashboard" },
     
-    // 2. +Funções (grupo)
+    // 2. Notícias AI
+    { name: "Notícias AI", href: "/admin/noticias-ai", icon: Newspaper, permission: "noticias-ai" },
+    
+    // 3. +Funções (grupo)
     { 
       name: "+Funções", 
       icon: PlusCircle, 
@@ -203,19 +207,26 @@ const AdminLayout = () => {
         { name: "Enviar Imagem", href: "/admin/upload-imagem", icon: Image, permission: "upload-image" },
         { name: "Web Stories", href: "/admin/webstories", icon: BookOpen, permission: "webstories" },
         { name: "Importar em Massa", href: "/admin/bulk-import", icon: Upload, permission: "bulk-import" },
+        { name: "Cadastrar Notícias", href: "/admin/articles/new", icon: PlusCircle, permission: "article-editor" },
+        { name: "Todas as Notícias", href: "/admin/articles", icon: FileText, permission: "articles" },
       ]
     },
     
-    // 3. Notícias AI
-    { name: "Notícias AI", href: "/admin/noticias-ai", icon: Newspaper, permission: "noticias-ai" },
+    // 4. Meus Projetos (grupo)
+    { 
+      name: "Meus Projetos", 
+      icon: FolderOpen, 
+      permission: "projetos-group",
+      type: "group",
+      key: "projetos",
+      submenu: [
+        { name: "ITL BRASIL", href: "https://itlbrasil.com/", icon: Globe, permission: "project-itl", external: true },
+        { name: "CDM BRASIL", href: "https://cdmbrasil.com.br/", icon: CloudCog, permission: "project-cdm", external: true },
+        { name: "CONSABS", href: "https://consabs.site/", icon: Building2, permission: "project-consabs", external: true },
+      ]
+    },
     
-    // 4. Cadastrar Notícias
-    { name: "Cadastrar Notícias", href: "/admin/articles/new", icon: Wrench, permission: "article-editor" },
-    
-    // 5. Todas as Notícias
-    { name: "Todas as Notícias", href: "/admin/articles", icon: FileText, permission: "articles" },
-    
-    // 7. Em Breve
+    // 5. Em Breve (superadmin only)
     { 
       name: "Em Breve", 
       icon: Clock, 
@@ -223,11 +234,6 @@ const AdminLayout = () => {
       type: "group",
       key: "em-breve",
       submenu: [
-        // ============ Meus Projetos ============
-        { name: "ITL BRASIL", href: "https://itlbrasil.com/", icon: Globe, permission: "project-itl", external: true, category: "projetos" },
-        { name: "CDM BRASIL", href: "https://cdmbrasil.com.br/", icon: CloudCog, permission: "project-cdm", external: true, category: "projetos" },
-        { name: "CONSABS", href: "https://consabs.site/", icon: Building2, permission: "project-consabs", external: true, category: "projetos" },
-        
         // ============ Treinamento ============
         { name: "YouTube", href: "/admin/training/youtube", icon: Youtube, permission: "training-youtube", category: "treinamento" },
         { name: "TikTok", href: "/admin/training/tiktok", icon: Music, permission: "training-tiktok", category: "treinamento" },
