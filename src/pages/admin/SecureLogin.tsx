@@ -4,6 +4,7 @@ import { useSecureAuth } from '@/contexts/SecureAuthContext';
 import { Loader2, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
+import logoItl from '@/assets/logo-itl-transparente.png';
 
 const loginSchema = z.object({
   email: z.string().email('Email inválido'),
@@ -102,24 +103,11 @@ export const SecureLogin: React.FC = () => {
     <div className="min-h-screen flex">
       {/* Lado Esquerdo - Branding (só desktop) */}
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary to-primary/80 items-center justify-center p-12">
-        <div className="text-center space-y-8 max-w-md animate-fade-in">
-          <img 
-            src="https://itlbrasil.com/assets/logo-itl-brasil-CE1kkbvC.png"
-            alt="ITL Brasil"
-            className="w-72 h-auto mx-auto drop-shadow-lg"
-          />
-          <div className="space-y-4">
-            <h2 className="text-white text-3xl font-bold">
-              ITL Brasil
-            </h2>
-            <p className="text-white/80 text-lg">
-              Instituto de Tecnologia em Logística
-            </p>
-            <p className="text-white/60 text-sm">
-              Transformando a logística brasileira através da inovação e tecnologia
-            </p>
-          </div>
-        </div>
+        <img 
+          src={logoItl}
+          alt="ITL Brasil"
+          className="w-80 h-auto drop-shadow-lg animate-fade-in"
+        />
       </div>
 
       {/* Lado Direito - Formulário */}
@@ -128,21 +116,11 @@ export const SecureLogin: React.FC = () => {
           {/* Logo mobile */}
           <div className="lg:hidden mb-8">
             <img 
-              src="https://itlbrasil.com/assets/logo-itl-brasil-CE1kkbvC.png"
+              src={logoItl}
               alt="ITL Brasil"
-              className="w-40 mx-auto"
+              className="w-48 mx-auto"
             />
           </div>
-
-          {/* Título institucional */}
-          <h1 className="text-2xl font-semibold text-primary text-center lg:text-left mb-2">
-            Acesso Administrativo
-          </h1>
-
-          {/* Subtítulo discreto */}
-          <p className="text-muted-foreground text-center lg:text-left mb-8 text-sm">
-            Entre com suas credenciais para continuar
-          </p>
 
           {/* Formulário */}
           <form onSubmit={handleLogin} className="space-y-5">
