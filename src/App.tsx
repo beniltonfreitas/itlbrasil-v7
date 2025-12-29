@@ -15,6 +15,7 @@ import Category from "./pages/Category";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
+import Accessibility from "./pages/Accessibility";
 
 import AdminLayout from "./pages/admin/AdminLayout";
 import { SecureLogin } from "./pages/admin/SecureLogin";
@@ -110,6 +111,7 @@ const PublicRoutes = () => {
       <Route path="/noticia/:slug" element={<ThemedPageWrapper><ArticleComplete /></ThemedPageWrapper>} />
       <Route path="/sobre" element={<ThemedPageWrapper><About /></ThemedPageWrapper>} />
       <Route path="/contato" element={<ThemedPageWrapper><Contact /></ThemedPageWrapper>} />
+      <Route path="/acessibilidade" element={<Accessibility />} />
       
       {/* Editions routes (public) */}
       <Route path="/jornal" element={<ThemedPageWrapper><EditionsListPublic /></ThemedPageWrapper>} />

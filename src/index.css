@@ -55,6 +55,35 @@
   line-height: 2.0 !important;
 }
 
+/* Screen Reader Mode - Enhanced Focus */
+.screen-reader-mode.enhanced-focus *:focus {
+  outline: 3px solid hsl(45, 100%, 50%) !important;
+  outline-offset: 2px !important;
+  box-shadow: 0 0 0 4px hsl(45, 100%, 50% / 0.3) !important;
+}
+
+.screen-reader-mode [tabindex="-1"]:focus {
+  outline: 3px dashed hsl(45, 100%, 50%) !important;
+}
+
+/* Screen reader only class */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+.line-spacing-loose-base,
+.line-spacing-loose-base * {
+  line-height: 2.0 !important;
+}
+
 /* Sound Wave Animation for Audio Player */
 @keyframes soundwave {
   0%, 100% { height: 4px; }
