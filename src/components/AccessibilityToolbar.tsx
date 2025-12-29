@@ -33,7 +33,7 @@ import { useAccessibility } from '@/hooks/useAccessibility';
 import { useTextToSpeech } from '@/hooks/useTextToSpeech';
 import { useScreenReader } from '@/hooks/useScreenReader';
 import { useAccessibilityShortcuts, ACCESSIBILITY_SHORTCUTS } from '@/hooks/useAccessibilityShortcuts';
-import { loadVLibras, unloadVLibras } from '@/lib/vlibras';
+import { loadVLibras } from '@/lib/vlibras';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 
@@ -70,25 +70,17 @@ export const AccessibilityToolbar: React.FC<AccessibilityToolbarProps> = ({ clas
     toggleScreenReader,
   } = useScreenReader();
 
-  // Gerenciar VLibras
+  // Carregar VLibras automaticamente
   useEffect(() => {
-    if (settings.vlibrasEnabled) {
-      setVlibrasLoading(true);
-      loadVLibras()
-        .then(() => {
-          toast.success("VLibras ativado com sucesso!");
-        })
-        .catch((error) => {
-          console.error("Erro ao carregar VLibras:", error);
-          toast.error("Erro ao carregar VLibras");
-        })
-        .finally(() => {
-          setVlibrasLoading(false);
-        });
-    } else {
-      unloadVLibras();
-    }
-  }, [settings.vlibrasEnabled]);
+    setVlibrasLoading(true);
+    loadVLibras()
+      .catch((error) => {
+        console.error("Erro ao carregar VLibras:", error);
+      })
+      .finally(() => {
+        setVlibrasLoading(false);
+      });
+  }, []);
 
   // Funções para Text-to-Speech
   const handleReadPage = useCallback(() => {
@@ -139,31 +131,12 @@ export const AccessibilityToolbar: React.FC<AccessibilityToolbarProps> = ({ clas
 
   return (
     <>
-      {/* Botões flutuantes fixos - Centro da lateral direita */}
+      {/* Botão flutuante fixo - Centro da lateral direita */}
       <div 
         className={`fixed right-0 top-1/2 -translate-y-1/2 z-[9998] flex flex-col gap-2 ${className}`}
         role="region"
         aria-label="Ferramentas de acessibilidade"
       >
-        {/* Botão VLibras */}
-        <button
-          onClick={toggleVLibras}
-          disabled={vlibrasLoading}
-          className={`
-            w-14 h-14 rounded-l-xl shadow-lg flex items-center justify-center
-            transition-all duration-300 hover:w-16 disabled:opacity-50
-            ${settings.vlibrasEnabled 
-              ? 'bg-blue-600 text-white' 
-              : 'bg-background border border-border text-foreground hover:bg-muted'
-            }
-          `}
-          title={settings.vlibrasEnabled ? 'Desativar VLibras (Alt+V)' : 'Ativar VLibras (Alt+V)'}
-          aria-label={settings.vlibrasEnabled ? 'Desativar VLibras' : 'Ativar VLibras'}
-          aria-pressed={settings.vlibrasEnabled}
-        >
-          <Hand className="w-6 h-6" />
-        </button>
-
         {/* Botão Acessibilidade */}
         <button
           onClick={() => setIsOpen(!isOpen)}
@@ -219,24 +192,13 @@ export const AccessibilityToolbar: React.FC<AccessibilityToolbarProps> = ({ clas
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {/* VLibras */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Hand className="w-5 h-5 text-blue-600" />
-                  <Label htmlFor="vlibras-toggle" className="font-medium">VLibras (Libras)</Label>
-                </div>
-                <Switch
-                  id="vlibras-toggle"
-                  checked={settings.vlibrasEnabled}
-                  onCheckedChange={toggleVLibras}
-                  disabled={vlibrasLoading}
-                />
-              </div>
-              {settings.vlibrasEnabled && (
-                <p className="text-xs text-muted-foreground ml-7">
-                  Widget VLibras ativo. Procure o ícone azul no canto da tela.
+              {/* VLibras Info */}
+              <div className="flex items-center gap-2 p-2 bg-blue-50 dark:bg-blue-950 rounded-lg">
+                <Hand className="w-5 h-5 text-blue-600" />
+                <p className="text-xs text-blue-700 dark:text-blue-300">
+                  VLibras está sempre ativo. Procure o ícone azul no canto da tela.
                 </p>
-              )}
+              </div>
 
               <Separator />
 
