@@ -650,7 +650,16 @@ const NoticiasAI = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative">
+      {/* Background pattern sutil */}
+      <div 
+        className="absolute inset-0 -z-10 opacity-[0.02]" 
+        style={{ 
+          backgroundImage: 'radial-gradient(circle, currentColor 1px, transparent 1px)', 
+          backgroundSize: '24px 24px' 
+        }} 
+      />
+
       {/* Guided Tour */}
       <NoticiasAITour 
         run={tourRun} 
@@ -674,14 +683,21 @@ const NoticiasAI = () => {
         onDismiss={dismissAchievement}
       />
 
-      {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-4">
+      {/* Header com visual tecnológico */}
+      <div className="flex items-center justify-between flex-wrap gap-4 animate-fade-in">
         <div className="flex items-center gap-3">
-          <Newspaper className="h-8 w-8 text-primary" />
+          {/* Barra vertical decorativa */}
+          <div className="h-12 w-1 bg-gradient-to-b from-primary to-primary/30 rounded-full" />
+          {/* Ícone em container */}
+          <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center shadow-sm">
+            <Newspaper className="h-6 w-6 text-primary" />
+          </div>
           <div>
-            <h1 className="text-2xl font-bold">Notícias AI</h1>
-            <p className="text-muted-foreground">
-              Chat inteligente para processamento editorial de notícias
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
+              Notícias AI
+            </h1>
+            <p className="text-muted-foreground text-sm">
+              Chat inteligente para processamento editorial
             </p>
           </div>
         </div>
@@ -696,17 +712,21 @@ const NoticiasAI = () => {
             variant="ghost" 
             size="sm" 
             onClick={startTour}
-            className="gap-2"
+            className="gap-2 hover:bg-primary/10 transition-colors"
           >
-            <Play className="h-4 w-4" />
+            <div className="h-6 w-6 rounded-md bg-emerald-500/10 flex items-center justify-center">
+              <Play className="h-3 w-3 text-emerald-600" />
+            </div>
             {tourCompleted ? 'Repetir Tour' : 'Iniciar Tour'}
           </Button>
 
           {/* Tutorial Button */}
           <Dialog>
             <DialogTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-2 noticias-ai-tutorial-btn">
-                <BookOpen className="h-4 w-4" />
+              <Button variant="outline" size="sm" className="gap-2 noticias-ai-tutorial-btn hover:border-primary/50 transition-colors">
+                <div className="h-6 w-6 rounded-md bg-blue-500/10 flex items-center justify-center">
+                  <BookOpen className="h-3 w-3 text-blue-600" />
+                </div>
                 Tutorial
               </Button>
             </DialogTrigger>
@@ -724,30 +744,55 @@ const NoticiasAI = () => {
       </div>
 
       {/* Input Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Send className="h-5 w-5" />
+      <Card className="relative overflow-hidden border-l-4 border-l-primary/50 bg-gradient-to-br from-card to-muted/20 animate-fade-in group hover:shadow-lg transition-all duration-300">
+        {/* Efeito de brilho sutil */}
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+        
+        <CardHeader className="border-b border-border/50 bg-muted/20 relative">
+          <CardTitle className="flex items-center gap-3">
+            <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Send className="h-4 w-4 text-primary" />
+            </div>
             Entrada de Conteúdo
           </CardTitle>
           <CardDescription>
             Digite EXCLUSIVA, CADASTRO MANUAL, JSON ou cole a notícia completa / link da matéria
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 pt-4 relative">
           <div className="flex flex-wrap gap-2 mb-2 noticias-ai-badges">
-            <Badge variant="outline" className="cursor-pointer hover:bg-primary/10" onClick={() => setInput("EXCLUSIVA\n\n")}>
+            {/* EXCLUSIVA - Vermelho */}
+            <Badge 
+              variant="outline" 
+              className="cursor-pointer transition-all duration-200 hover:scale-105 border-red-400/50 text-red-600 hover:bg-red-500/10 hover:border-red-500" 
+              onClick={() => setInput("EXCLUSIVA\n\n")}
+            >
               EXCLUSIVA
             </Badge>
-            <Badge variant="outline" className="cursor-pointer hover:bg-primary/10" onClick={() => setInput("CADASTRO MANUAL\n\n")}>
+            {/* CADASTRO MANUAL - Azul */}
+            <Badge 
+              variant="outline" 
+              className="cursor-pointer transition-all duration-200 hover:scale-105 border-blue-400/50 text-blue-600 hover:bg-blue-500/10 hover:border-blue-500" 
+              onClick={() => setInput("CADASTRO MANUAL\n\n")}
+            >
               CADASTRO MANUAL
             </Badge>
-            <Badge variant="outline" className="cursor-pointer hover:bg-primary/10" onClick={() => setInput("JSON\n\n")}>
+            {/* JSON - Verde */}
+            <Badge 
+              variant="outline" 
+              className="cursor-pointer transition-all duration-200 hover:scale-105 border-emerald-400/50 text-emerald-600 hover:bg-emerald-500/10 hover:border-emerald-500" 
+              onClick={() => setInput("JSON\n\n")}
+            >
               JSON
             </Badge>
+            {/* LOTE - Roxo */}
             <Badge 
               variant={isMultipleUrls ? "default" : "outline"} 
-              className={`cursor-pointer noticias-ai-badge-lote ${isMultipleUrls ? "bg-blue-600 hover:bg-blue-700" : "hover:bg-primary/10"}`}
+              className={`cursor-pointer transition-all duration-200 hover:scale-105 noticias-ai-badge-lote ${
+                isMultipleUrls 
+                  ? "bg-purple-600 hover:bg-purple-700 border-purple-600" 
+                  : "border-purple-400/50 text-purple-600 hover:bg-purple-500/10 hover:border-purple-500"
+              }`}
               onClick={() => {
                 setIsBatchMode(!isBatchMode);
                 if (!isBatchMode) {
@@ -761,17 +806,36 @@ const NoticiasAI = () => {
             </Badge>
           </div>
 
-          {/* Batch mode hint */}
+          {/* Batch mode hint - Visual tecnológico */}
           {(isBatchMode || isMultipleUrls) && (
-            <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/30 text-blue-700 dark:text-blue-400 text-sm">
-              <p className="font-medium flex items-center gap-2">
-                <List className="h-4 w-4" />
-                Modo Lote Ativo
-              </p>
-              <p className="text-xs mt-1 opacity-75">
-                Cole até 10 URLs (uma por linha) para processar em paralelo.
-                {detectedUrls.length > 0 && ` Detectadas: ${detectedUrls.length} URL(s)`}
-              </p>
+            <div className="p-4 rounded-lg bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-500/30 backdrop-blur-sm">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-purple-500/20 flex items-center justify-center animate-pulse">
+                  <List className="h-5 w-5 text-purple-600" />
+                </div>
+                <div>
+                  <p className="font-semibold text-purple-700 dark:text-purple-400">Modo Lote Ativo</p>
+                  <p className="text-xs text-muted-foreground">
+                    Cole até 10 URLs (uma por linha) para processar em paralelo.
+                    {detectedUrls.length > 0 && ` Detectadas: ${detectedUrls.length} URL(s)`}
+                  </p>
+                </div>
+              </div>
+              {/* Barra de progresso do batch */}
+              {batchProgress && (
+                <div className="mt-3">
+                  <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                    <span>Processando...</span>
+                    <span className="font-mono">{batchProgress.current}/{batchProgress.total}</span>
+                  </div>
+                  <div className="h-1.5 bg-purple-500/20 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-gradient-to-r from-purple-500 to-blue-500 rounded-full transition-all duration-300"
+                      style={{ width: `${(batchProgress.current / batchProgress.total) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -821,7 +885,7 @@ const NoticiasAI = () => {
             <Button
               onClick={handleGenerate}
               disabled={isLoading || !input.trim()}
-              className="flex-1 noticias-ai-generate"
+              className="flex-1 noticias-ai-generate bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-300"
             >
               {isLoading ? (
                 <>
@@ -855,30 +919,47 @@ const NoticiasAI = () => {
       </Card>
 
       {/* Output Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Resultado</CardTitle>
+      <Card className="border-l-4 border-l-blue-500/50 bg-gradient-to-br from-card to-muted/20 animate-fade-in hover:shadow-lg transition-all duration-300" style={{ animationDelay: '100ms' }}>
+        <CardHeader className="border-b border-border/50 bg-muted/20">
+          <CardTitle className="flex items-center gap-3">
+            <div className="h-9 w-9 rounded-lg bg-blue-500/10 flex items-center justify-center">
+              <Eye className="h-4 w-4 text-blue-600" />
+            </div>
+            Resultado
+          </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-4">
           <Tabs value={activeTab} onValueChange={handleTabChange} className="noticias-ai-tabs">
-            <TabsList className="grid w-full grid-cols-6">
-              <TabsTrigger value="cadastro" className="noticias-ai-tab-manual">Manual</TabsTrigger>
-              <TabsTrigger value="json" className="noticias-ai-tab-json">JSON</TabsTrigger>
-              <TabsTrigger value="historico" className="flex items-center gap-1 noticias-ai-tab-historico">
-                <History className="h-3 w-3" />
-                Histórico
+            <TabsList className="grid w-full grid-cols-6 bg-muted/50">
+              <TabsTrigger value="cadastro" className="noticias-ai-tab-manual data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                Manual
               </TabsTrigger>
-              <TabsTrigger value="stats" className="flex items-center gap-1 noticias-ai-tab-stats">
-                <BarChart3 className="h-3 w-3" />
-                Estatísticas
+              <TabsTrigger value="json" className="noticias-ai-tab-json data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                JSON
               </TabsTrigger>
-              <TabsTrigger value="sources" className="flex items-center gap-1 noticias-ai-tab-sources">
-                <Settings className="h-3 w-3" />
-                Fontes
+              <TabsTrigger value="historico" className="flex items-center gap-1 noticias-ai-tab-historico data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                <div className="h-5 w-5 rounded-md bg-amber-500/10 flex items-center justify-center">
+                  <History className="h-3 w-3 text-amber-600" />
+                </div>
+                <span className="hidden sm:inline">Histórico</span>
               </TabsTrigger>
-              <TabsTrigger value="schedules" className="flex items-center gap-1 noticias-ai-tab-schedules">
-                <Clock className="h-3 w-3" />
-                Agendamentos
+              <TabsTrigger value="stats" className="flex items-center gap-1 noticias-ai-tab-stats data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                <div className="h-5 w-5 rounded-md bg-emerald-500/10 flex items-center justify-center">
+                  <BarChart3 className="h-3 w-3 text-emerald-600" />
+                </div>
+                <span className="hidden sm:inline">Estatísticas</span>
+              </TabsTrigger>
+              <TabsTrigger value="sources" className="flex items-center gap-1 noticias-ai-tab-sources data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                <div className="h-5 w-5 rounded-md bg-purple-500/10 flex items-center justify-center">
+                  <Settings className="h-3 w-3 text-purple-600" />
+                </div>
+                <span className="hidden sm:inline">Fontes</span>
+              </TabsTrigger>
+              <TabsTrigger value="schedules" className="flex items-center gap-1 noticias-ai-tab-schedules data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                <div className="h-5 w-5 rounded-md bg-cyan-500/10 flex items-center justify-center">
+                  <Clock className="h-3 w-3 text-cyan-600" />
+                </div>
+                <span className="hidden sm:inline">Agendamentos</span>
               </TabsTrigger>
             </TabsList>
             <TabsContent value="cadastro" className="mt-4">
@@ -905,61 +986,82 @@ const NoticiasAI = () => {
 
       {/* Progress and Tips Card */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Onboarding Checklist */}
-        <Card className="border-primary/20 bg-primary/5">
-          <CardHeader className="pb-2">
+        {/* Onboarding Checklist - Visual tecnológico */}
+        <Card className="relative overflow-hidden group border-l-4 border-l-amber-500/50 bg-gradient-to-br from-card to-amber-500/5 hover:shadow-md transition-all duration-300 animate-fade-in" style={{ animationDelay: '200ms' }}>
+          {/* Efeito hover */}
+          <div className="absolute inset-0 bg-gradient-to-r from-amber-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          
+          <CardHeader className="pb-2 border-b border-border/30 bg-amber-500/5 relative">
             <CardTitle className="flex items-center gap-2 text-base">
-              <Trophy className="h-4 w-4 text-primary" />
+              <div className="h-8 w-8 rounded-lg bg-amber-500/15 flex items-center justify-center">
+                <Trophy className="h-4 w-4 text-amber-600" />
+              </div>
               Próximos Objetivos
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-4 relative">
+            {/* Barra de progresso do nível */}
+            <div className="mb-4">
+              <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                <span>Progresso do Nível</span>
+                <span className="font-mono text-amber-600">{levelProgress}%</span>
+              </div>
+              <div className="h-2 bg-amber-500/10 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-amber-500 to-amber-400 rounded-full transition-all duration-500"
+                  style={{ width: `${levelProgress}%` }}
+                />
+              </div>
+            </div>
             <OnboardingChecklist maxItems={4} showCompleted={true} />
           </CardContent>
         </Card>
 
-        {/* Quick Tips Card */}
-        <Card className="border-primary/20 bg-primary/5">
-          <CardContent className="pt-6">
-            <div className="flex items-start gap-4">
-              <div className="p-2 rounded-lg bg-primary/10">
-                <BookOpen className="h-5 w-5 text-primary" />
+        {/* Quick Tips Card - Visual tecnológico */}
+        <Card className="relative overflow-hidden group border-l-4 border-l-blue-500/50 bg-gradient-to-br from-card to-blue-500/5 hover:shadow-md transition-all duration-300 animate-fade-in" style={{ animationDelay: '300ms' }}>
+          {/* Efeito hover */}
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          
+          <CardHeader className="border-b border-border/30 bg-blue-500/5 relative">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <div className="h-8 w-8 rounded-lg bg-blue-500/15 flex items-center justify-center">
+                <BookOpen className="h-4 w-4 text-blue-600" />
               </div>
-              <div className="flex-1">
-                <h3 className="font-semibold mb-2">Dicas Rápidas</h3>
-                <div className="grid grid-cols-1 gap-2 text-xs text-muted-foreground">
-                  <div className="flex items-center gap-1">
-                    <Badge variant="outline" className="text-red-600 border-red-300">EXCLUSIVA</Badge>
-                    <span>Preservar original</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Badge variant="outline" className="text-blue-600 border-blue-300">JSON</Badge>
-                    <span>Importação automática</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Badge variant="outline" className="text-purple-600 border-purple-300">LOTE</Badge>
-                    <span>Até 10 URLs</span>
-                  </div>
-                </div>
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button variant="link" size="sm" className="p-0 h-auto mt-2 text-primary">
-                      <HelpCircle className="h-3 w-3 mr-1" />
-                      Ver tutorial completo
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
-                    <DialogHeader>
-                      <DialogTitle className="flex items-center gap-2">
-                        <HelpCircle className="h-5 w-5 text-primary" />
-                        Tutorial do Notícias AI
-                      </DialogTitle>
-                    </DialogHeader>
-                    <NoticiasAITutorial />
-                  </DialogContent>
-                </Dialog>
+              Dicas Rápidas
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-4 relative">
+            <div className="grid grid-cols-1 gap-3 text-sm">
+              <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50 transition-colors">
+                <Badge variant="outline" className="text-red-600 border-red-400/50 bg-red-500/5">EXCLUSIVA</Badge>
+                <span className="text-muted-foreground">Preservar original</span>
+              </div>
+              <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50 transition-colors">
+                <Badge variant="outline" className="text-emerald-600 border-emerald-400/50 bg-emerald-500/5">JSON</Badge>
+                <span className="text-muted-foreground">Importação automática</span>
+              </div>
+              <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50 transition-colors">
+                <Badge variant="outline" className="text-purple-600 border-purple-400/50 bg-purple-500/5">LOTE</Badge>
+                <span className="text-muted-foreground">Até 10 URLs paralelas</span>
               </div>
             </div>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="link" size="sm" className="p-0 h-auto mt-3 text-primary hover:text-primary/80 transition-colors">
+                  <HelpCircle className="h-3 w-3 mr-1" />
+                  Ver tutorial completo
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <HelpCircle className="h-5 w-5 text-primary" />
+                    Tutorial do Notícias AI
+                  </DialogTitle>
+                </DialogHeader>
+                <NoticiasAITutorial />
+              </DialogContent>
+            </Dialog>
           </CardContent>
         </Card>
       </div>
