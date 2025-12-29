@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Newspaper, Send, Trash2, Copy, Check, Loader2, Upload, Download, Eye, List, AlertCircle, History, Wand2, BarChart3, Settings, Clock } from "lucide-react";
+import { Newspaper, Send, Trash2, Copy, Check, Loader2, Upload, Download, Eye, List, AlertCircle, History, Wand2, BarChart3, Settings, Clock, HelpCircle, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,7 +18,15 @@ import NoticiasAIImportHistory from "@/components/NoticiasAIImportHistory";
 import NoticiasAIStatsDashboard from "@/components/NoticiasAIStatsDashboard";
 import NoticiasAISourcesManager from "@/components/NoticiasAISourcesManager";
 import NoticiasAIScheduleManager from "@/components/NoticiasAIScheduleManager";
+import { NoticiasAITutorial } from "@/components/NoticiasAITutorial";
 import { useCreateNoticiasAIImport, detectNewsSource } from "@/hooks/useNoticiasAIImports";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 interface GeneratedContent {
   cadastroManual: {
@@ -545,14 +553,35 @@ const NoticiasAI = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <Newspaper className="h-8 w-8 text-primary" />
-        <div>
-          <h1 className="text-2xl font-bold">Notícias AI</h1>
-          <p className="text-muted-foreground">
-            Chat inteligente para processamento editorial de notícias
-          </p>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Newspaper className="h-8 w-8 text-primary" />
+          <div>
+            <h1 className="text-2xl font-bold">Notícias AI</h1>
+            <p className="text-muted-foreground">
+              Chat inteligente para processamento editorial de notícias
+            </p>
+          </div>
         </div>
+
+        {/* Tutorial Button */}
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button variant="outline" size="sm" className="gap-2">
+              <BookOpen className="h-4 w-4" />
+              Tutorial
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <HelpCircle className="h-5 w-5 text-primary" />
+                Tutorial do Notícias AI
+              </DialogTitle>
+            </DialogHeader>
+            <NoticiasAITutorial />
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Input Section */}
@@ -734,54 +763,47 @@ const NoticiasAI = () => {
         </CardContent>
       </Card>
 
-      {/* Instructions */}
-      <Card>
-        <CardHeader>
-          <CardTitle>📌 Como Usar</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4 text-sm">
-          <div>
-            <h4 className="font-semibold text-red-600">🔴 EXCLUSIVA</h4>
-            <p className="text-muted-foreground">
-              Comece com "EXCLUSIVA" para manter o texto original sem alterações. Gera Cadastro Manual + JSON.
-            </p>
-          </div>
-          <div>
-            <h4 className="font-semibold text-orange-600">🟠 CADASTRO MANUAL</h4>
-            <p className="text-muted-foreground">
-              Comece com "CADASTRO MANUAL" para gerar apenas o formato do painel administrativo.
-            </p>
-          </div>
-          <div>
-            <h4 className="font-semibold text-blue-600">🔵 JSON</h4>
-            <p className="text-muted-foreground">
-              Comece com "JSON" para gerar apenas o formato JSON para importação.
-            </p>
-          </div>
-          <div>
-            <h4 className="font-semibold text-green-600">🟢 LINK</h4>
-            <p className="text-muted-foreground">
-              Cole uma URL de notícia para extrair e processar automaticamente.
-            </p>
-          </div>
-          <div>
-            <h4 className="font-semibold text-purple-600">🟣 LOTE (Múltiplas URLs)</h4>
-            <p className="text-muted-foreground">
-              Cole até 10 URLs (uma por linha) para processar em paralelo. O sistema detecta automaticamente quando há múltiplas URLs.
-            </p>
-          </div>
-          <div>
-            <h4 className="font-semibold text-gray-600">⚪ TEXTO</h4>
-            <p className="text-muted-foreground">
-              Cole o texto completo da notícia para processamento e formatação.
-            </p>
-          </div>
-          <div className="pt-4 border-t">
-            <h4 className="font-semibold text-foreground">📰 Padrão Agência Brasil</h4>
-            <p className="text-muted-foreground">
-              As notícias são formatadas seguindo o padrão jornalístico da Agência Brasil: 
-              lide em negrito, citações em blockquote, intertítulos com h2, listas com ul/li.
-            </p>
+      {/* Quick Tips Card */}
+      <Card className="border-primary/20 bg-primary/5">
+        <CardContent className="pt-6">
+          <div className="flex items-start gap-4">
+            <div className="p-2 rounded-lg bg-primary/10">
+              <BookOpen className="h-5 w-5 text-primary" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold mb-2">Dicas Rápidas</h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs text-muted-foreground">
+                <div className="flex items-center gap-1">
+                  <Badge variant="outline" className="text-red-600 border-red-300">EXCLUSIVA</Badge>
+                  <span>Preservar original</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Badge variant="outline" className="text-blue-600 border-blue-300">JSON</Badge>
+                  <span>Importação automática</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Badge variant="outline" className="text-purple-600 border-purple-300">LOTE</Badge>
+                  <span>Até 10 URLs</span>
+                </div>
+              </div>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="link" size="sm" className="p-0 h-auto mt-2 text-primary">
+                    <HelpCircle className="h-3 w-3 mr-1" />
+                    Ver tutorial completo
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2">
+                      <HelpCircle className="h-5 w-5 text-primary" />
+                      Tutorial do Notícias AI
+                    </DialogTitle>
+                  </DialogHeader>
+                  <NoticiasAITutorial />
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
         </CardContent>
       </Card>
