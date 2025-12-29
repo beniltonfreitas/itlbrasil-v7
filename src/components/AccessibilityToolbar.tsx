@@ -1,33 +1,49 @@
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { Slider } from "@/components/ui/slider";
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Accessibility, 
-  Type, 
   Volume2, 
   VolumeX,
-  Contrast,
-  RotateCcw,
+  Eye,
+  Type,
+  Hand,
   X,
+  Plus,
+  Minus,
+  RotateCcw,
+  ExternalLink,
+  Keyboard,
+  ChevronDown,
+  ChevronUp,
   Play,
-  Square,
-  Pause
-} from "lucide-react";
-import { useAccessibility } from "@/hooks/useAccessibility";
-import { useTextToSpeech } from "@/hooks/useTextToSpeech";
-import { loadVLibras, unloadVLibras } from "@/lib/vlibras";
-import { toast } from "sonner";
+  Pause,
+  Square
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { Slider } from '@/components/ui/slider';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { 
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
+import { useAccessibility } from '@/hooks/useAccessibility';
+import { useTextToSpeech } from '@/hooks/useTextToSpeech';
+import { useScreenReader } from '@/hooks/useScreenReader';
+import { useAccessibilityShortcuts, ACCESSIBILITY_SHORTCUTS } from '@/hooks/useAccessibilityShortcuts';
+import { loadVLibras, unloadVLibras } from '@/lib/vlibras';
+import { Link } from 'react-router-dom';
+import { toast } from 'sonner';
 
 interface AccessibilityToolbarProps {
   className?: string;
 }
 
-export const AccessibilityToolbar = ({ className }: AccessibilityToolbarProps) => {
+export const AccessibilityToolbar: React.FC<AccessibilityToolbarProps> = ({ className }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(false);
   const [vlibrasLoading, setVlibrasLoading] = useState(false);
   
   const {
@@ -37,7 +53,7 @@ export const AccessibilityToolbar = ({ className }: AccessibilityToolbarProps) =
     toggleHighContrast,
     toggleDyslexicFont,
     setLineSpacing,
-    resetSettings
+    resetSettings,
   } = useAccessibility();
 
   const {
@@ -45,9 +61,14 @@ export const AccessibilityToolbar = ({ className }: AccessibilityToolbarProps) =
     stop,
     pause,
     resume,
-    status,
-    isSupported
+    status: speechStatus,
+    isSupported: ttsSupported,
   } = useTextToSpeech();
+
+  const {
+    settings: screenReaderSettings,
+    toggleScreenReader,
+  } = useScreenReader();
 
   // Gerenciar VLibras
   useEffect(() => {
@@ -67,26 +88,22 @@ export const AccessibilityToolbar = ({ className }: AccessibilityToolbarProps) =
     } else {
       unloadVLibras();
     }
-
-    return () => {
-      // Não descarregar ao desmontar para manter preferência
-    };
   }, [settings.vlibrasEnabled]);
 
-  const handleReadPage = () => {
-    if (status === 'playing') {
+  // Funções para Text-to-Speech
+  const handleReadPage = useCallback(() => {
+    if (speechStatus === 'playing') {
       pause();
       return;
     }
     
-    if (status === 'paused') {
+    if (speechStatus === 'paused') {
       resume();
       return;
     }
 
-    // Extrair texto principal da página
     const mainContent = document.querySelector('main') || document.querySelector('article') || document.body;
-    const textContent = mainContent?.textContent?.slice(0, 3000) || '';
+    const textContent = mainContent?.textContent?.slice(0, 5000) || '';
     
     if (textContent.trim()) {
       speak(textContent);
@@ -94,260 +111,364 @@ export const AccessibilityToolbar = ({ className }: AccessibilityToolbarProps) =
     } else {
       toast.error("Não foi possível encontrar conteúdo para ler");
     }
-  };
+  }, [speechStatus, speak, pause, resume]);
 
-  const handleStopReading = () => {
+  const handleStopReading = useCallback(() => {
     stop();
     toast.info("Leitura interrompida");
-  };
+  }, [stop]);
 
-  const handleReset = () => {
+  const handleReset = useCallback(() => {
     resetSettings();
     stop();
     toast.success("Configurações restauradas para o padrão");
-  };
+  }, [resetSettings, stop]);
 
-  const fontSizePercent = Math.round(settings.fontScale * 100);
+  // Atalhos de teclado
+  useAccessibilityShortcuts({
+    onToggleMenu: () => setIsOpen(prev => !prev),
+    onToggleVLibras: toggleVLibras,
+    onIncreaseFontSize: () => adjustFontSize(true),
+    onDecreaseFontSize: () => adjustFontSize(false),
+    onToggleHighContrast: toggleHighContrast,
+    onToggleTextToSpeech: handleReadPage,
+    onToggleScreenReader: toggleScreenReader,
+  });
 
-  if (!isOpen) {
-    return (
-      <Button
-        onClick={() => setIsOpen(true)}
-        className={`fixed top-20 right-4 z-50 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg ${className}`}
-        size="icon"
-        aria-label="Abrir ferramentas de acessibilidade"
-      >
-        <Accessibility className="h-5 w-5" />
-      </Button>
-    );
-  }
+  const fontSizePercentage = Math.round(settings.fontScale * 100);
 
   return (
-    <Card className={`fixed top-20 right-4 z-50 w-80 shadow-2xl bg-card border-border ${className}`}>
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold flex items-center gap-2 text-card-foreground">
-            <Accessibility className="h-5 w-5 text-primary" />
-            Acessibilidade
-          </h3>
-          <Button
+    <>
+      {/* Botões flutuantes fixos - Centro da lateral direita */}
+      <div 
+        className={`fixed right-0 top-1/2 -translate-y-1/2 z-[9998] flex flex-col gap-2 ${className}`}
+        role="region"
+        aria-label="Ferramentas de acessibilidade"
+      >
+        {/* Botão VLibras */}
+        <button
+          onClick={toggleVLibras}
+          disabled={vlibrasLoading}
+          className={`
+            w-14 h-14 rounded-l-xl shadow-lg flex items-center justify-center
+            transition-all duration-300 hover:w-16 disabled:opacity-50
+            ${settings.vlibrasEnabled 
+              ? 'bg-blue-600 text-white' 
+              : 'bg-background border border-border text-foreground hover:bg-muted'
+            }
+          `}
+          title={settings.vlibrasEnabled ? 'Desativar VLibras (Alt+V)' : 'Ativar VLibras (Alt+V)'}
+          aria-label={settings.vlibrasEnabled ? 'Desativar VLibras' : 'Ativar VLibras'}
+          aria-pressed={settings.vlibrasEnabled}
+        >
+          <Hand className="w-6 h-6" />
+        </button>
+
+        {/* Botão Acessibilidade */}
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className={`
+            w-14 h-14 rounded-l-xl shadow-lg flex items-center justify-center
+            transition-all duration-300 hover:w-16
+            ${isOpen 
+              ? 'bg-primary text-primary-foreground' 
+              : 'bg-background border border-border text-foreground hover:bg-muted'
+            }
+          `}
+          title="Menu de Acessibilidade (Alt+A)"
+          aria-label="Abrir menu de acessibilidade"
+          aria-expanded={isOpen}
+          aria-controls="accessibility-panel"
+        >
+          <Accessibility className="w-6 h-6" />
+        </button>
+      </div>
+
+      {/* Painel de Acessibilidade */}
+      {isOpen && (
+        <>
+          {/* Overlay */}
+          <div 
+            className="fixed inset-0 bg-black/50 z-[9998]"
             onClick={() => setIsOpen(false)}
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            aria-label="Fechar ferramentas de acessibilidade"
+            aria-hidden="true"
+          />
+          
+          {/* Painel */}
+          <div 
+            id="accessibility-panel"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="accessibility-title"
+            className="fixed right-4 top-1/2 -translate-y-1/2 w-[350px] max-h-[90vh] bg-background border border-border rounded-xl shadow-2xl z-[9999] overflow-hidden flex flex-col"
           >
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
-
-        <div className="space-y-4">
-          {/* VLibras Toggle */}
-          <div className="flex items-center justify-between">
-            <Label htmlFor="vlibras" className="flex items-center gap-2 text-sm font-medium cursor-pointer">
-              <span className="text-lg">🤟</span>
-              VLibras (Libras)
-            </Label>
-            <Switch
-              id="vlibras"
-              checked={settings.vlibrasEnabled}
-              onCheckedChange={toggleVLibras}
-              disabled={vlibrasLoading}
-              aria-label="Ativar tradução para Libras"
-            />
-          </div>
-          {settings.vlibrasEnabled && (
-            <p className="text-xs text-muted-foreground">
-              Widget VLibras ativo. Procure o ícone azul no canto da tela.
-            </p>
-          )}
-
-          <Separator />
-
-          {/* Font Size */}
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">
-              Tamanho da Fonte: {fontSizePercent}%
-            </Label>
-            <div className="flex items-center gap-2">
-              <Button
-                onClick={() => adjustFontSize(false)}
-                variant="outline"
-                size="sm"
-                disabled={settings.fontScale <= 0.9}
-                aria-label="Diminuir fonte"
-                className="h-8"
-              >
-                <Type className="h-3 w-3" />
-                <span className="ml-1">A-</span>
-              </Button>
-              <Slider
-                value={[settings.fontScale * 100]}
-                min={90}
-                max={160}
-                step={10}
-                onValueChange={(value) => {
-                  const newScale = value[0] / 100;
-                  // Calcular diferença e aplicar incremento
-                  if (newScale > settings.fontScale) {
-                    adjustFontSize(true);
-                  } else if (newScale < settings.fontScale) {
-                    adjustFontSize(false);
-                  }
-                }}
-                className="flex-1"
-                aria-label="Ajustar tamanho da fonte"
-              />
-              <Button
-                onClick={() => adjustFontSize(true)}
-                variant="outline"
-                size="sm"
-                disabled={settings.fontScale >= 1.6}
-                aria-label="Aumentar fonte"
-                className="h-8"
-              >
-                <Type className="h-4 w-4" />
-                <span className="ml-1">A+</span>
-              </Button>
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* High Contrast */}
-          <div className="flex items-center justify-between">
-            <Label htmlFor="high-contrast" className="flex items-center gap-2 text-sm font-medium cursor-pointer">
-              <Contrast className="h-4 w-4" />
-              Alto Contraste
-            </Label>
-            <Switch
-              id="high-contrast"
-              checked={settings.highContrast}
-              onCheckedChange={toggleHighContrast}
-              aria-label="Ativar alto contraste"
-            />
-          </div>
-
-          {/* Dyslexic Font */}
-          <div className="flex items-center justify-between">
-            <Label htmlFor="dyslexic-font" className="flex items-center gap-2 text-sm font-medium cursor-pointer">
-              <Type className="h-4 w-4" />
-              Fonte Disléxica
-            </Label>
-            <Switch
-              id="dyslexic-font"
-              checked={settings.dyslexicFont}
-              onCheckedChange={toggleDyslexicFont}
-              aria-label="Ativar fonte para dislexia"
-            />
-          </div>
-
-          <Separator />
-
-          {/* Line Spacing */}
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">Espaçamento de Linha</Label>
-            <div className="flex gap-2">
-              <Button
-                onClick={() => setLineSpacing('1.0')}
-                variant={settings.lineSpacing === '1.0' ? 'default' : 'outline'}
-                size="sm"
-                className="flex-1 h-8 text-xs"
-                aria-label="Espaçamento normal"
-              >
-                Normal
-              </Button>
-              <Button
-                onClick={() => setLineSpacing('1.5')}
-                variant={settings.lineSpacing === '1.5' ? 'default' : 'outline'}
-                size="sm"
-                className="flex-1 h-8 text-xs"
-                aria-label="Espaçamento relaxado"
-              >
-                Relaxado
-              </Button>
-              <Button
-                onClick={() => setLineSpacing('2.0')}
-                variant={settings.lineSpacing === '2.0' ? 'default' : 'outline'}
-                size="sm"
-                className="flex-1 h-8 text-xs"
-                aria-label="Espaçamento espaçoso"
-              >
-                Espaçoso
-              </Button>
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Text-to-Speech */}
-          {isSupported && (
-            <div className="space-y-2">
-              <Label className="text-sm font-medium flex items-center gap-2">
-                <Volume2 className="h-4 w-4" />
-                Leitura em Áudio
-              </Label>
-              <div className="flex gap-2">
-                <Button
-                  onClick={handleReadPage}
-                  variant={status === 'playing' || status === 'paused' ? 'default' : 'outline'}
-                  size="sm"
-                  className="flex-1 h-9"
-                  aria-label={status === 'playing' ? 'Pausar leitura' : status === 'paused' ? 'Continuar leitura' : 'Ler página'}
-                >
-                  {status === 'playing' ? (
-                    <>
-                      <Pause className="h-4 w-4 mr-2" />
-                      Pausar
-                    </>
-                  ) : status === 'paused' ? (
-                    <>
-                      <Play className="h-4 w-4 mr-2" />
-                      Continuar
-                    </>
-                  ) : (
-                    <>
-                      <Play className="h-4 w-4 mr-2" />
-                      Ler Página
-                    </>
-                  )}
-                </Button>
-                {(status === 'playing' || status === 'paused') && (
-                  <Button
-                    onClick={handleStopReading}
-                    variant="destructive"
-                    size="sm"
-                    className="h-9"
-                    aria-label="Parar leitura"
-                  >
-                    <Square className="h-4 w-4" />
-                  </Button>
-                )}
+            {/* Header */}
+            <div className="p-4 bg-primary text-primary-foreground flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Accessibility className="w-5 h-5" />
+                <h2 id="accessibility-title" className="font-bold">Acessibilidade</h2>
               </div>
+              <button
+                onClick={() => setIsOpen(false)}
+                className="p-1 hover:bg-primary-foreground/20 rounded-full transition-colors"
+                aria-label="Fechar menu"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
-          )}
 
-          {!isSupported && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <VolumeX className="h-4 w-4" />
-              <span>Leitura em áudio não suportada neste navegador</span>
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {/* VLibras */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Hand className="w-5 h-5 text-blue-600" />
+                  <Label htmlFor="vlibras-toggle" className="font-medium">VLibras (Libras)</Label>
+                </div>
+                <Switch
+                  id="vlibras-toggle"
+                  checked={settings.vlibrasEnabled}
+                  onCheckedChange={toggleVLibras}
+                  disabled={vlibrasLoading}
+                />
+              </div>
+              {settings.vlibrasEnabled && (
+                <p className="text-xs text-muted-foreground ml-7">
+                  Widget VLibras ativo. Procure o ícone azul no canto da tela.
+                </p>
+              )}
+
+              <Separator />
+
+              {/* Tamanho da Fonte */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Type className="w-5 h-5 text-green-600" />
+                    <Label className="font-medium">Tamanho da Fonte</Label>
+                  </div>
+                  <Badge variant="secondary">{fontSizePercentage}%</Badge>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => adjustFontSize(false)}
+                    disabled={settings.fontScale <= 0.9}
+                    aria-label="Diminuir fonte"
+                    className="h-8 w-8"
+                  >
+                    <Minus className="w-4 h-4" />
+                  </Button>
+                  <Slider
+                    value={[settings.fontScale * 100]}
+                    min={90}
+                    max={160}
+                    step={10}
+                    onValueChange={(value) => {
+                      const newScale = value[0] / 100;
+                      if (newScale > settings.fontScale) {
+                        adjustFontSize(true);
+                      } else if (newScale < settings.fontScale) {
+                        adjustFontSize(false);
+                      }
+                    }}
+                    className="flex-1"
+                    aria-label="Ajustar tamanho da fonte"
+                  />
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => adjustFontSize(true)}
+                    disabled={settings.fontScale >= 1.6}
+                    aria-label="Aumentar fonte"
+                    className="h-8 w-8"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Alto Contraste */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Eye className="w-5 h-5 text-yellow-600" />
+                  <Label htmlFor="contrast-toggle" className="font-medium">Alto Contraste</Label>
+                </div>
+                <Switch
+                  id="contrast-toggle"
+                  checked={settings.highContrast}
+                  onCheckedChange={toggleHighContrast}
+                />
+              </div>
+
+              {/* Fonte Disléxica */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Type className="w-5 h-5 text-purple-600" />
+                  <Label htmlFor="dyslexic-toggle" className="font-medium">Fonte Disléxica</Label>
+                </div>
+                <Switch
+                  id="dyslexic-toggle"
+                  checked={settings.dyslexicFont}
+                  onCheckedChange={toggleDyslexicFont}
+                />
+              </div>
+
+              {/* Modo Leitor de Tela */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Accessibility className="w-5 h-5 text-teal-600" />
+                  <Label htmlFor="screenreader-toggle" className="font-medium">Modo Leitor de Tela</Label>
+                </div>
+                <Switch
+                  id="screenreader-toggle"
+                  checked={screenReaderSettings.enabled}
+                  onCheckedChange={toggleScreenReader}
+                />
+              </div>
+              {screenReaderSettings.enabled && (
+                <p className="text-xs text-muted-foreground ml-7">
+                  Pressione H para navegar entre títulos. Shift+H para voltar.
+                </p>
+              )}
+
+              <Separator />
+
+              {/* Espaçamento de Linha */}
+              <div className="space-y-3">
+                <Label className="font-medium">Espaçamento de Linha</Label>
+                <div className="flex gap-2">
+                  {[
+                    { value: '1.0' as const, label: 'Normal' },
+                    { value: '1.5' as const, label: 'Relaxado' },
+                    { value: '2.0' as const, label: 'Espaçoso' },
+                  ].map(({ value, label }) => (
+                    <Button
+                      key={value}
+                      variant={settings.lineSpacing === value ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setLineSpacing(value)}
+                      className="flex-1"
+                    >
+                      {label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Text-to-Speech */}
+              {ttsSupported && (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Volume2 className="w-5 h-5 text-red-600" />
+                    <Label className="font-medium">Leitura de Texto</Label>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant={speechStatus === 'playing' || speechStatus === 'paused' ? 'default' : 'outline'}
+                      onClick={handleReadPage}
+                      className="flex-1"
+                      size="sm"
+                    >
+                      {speechStatus === 'playing' ? (
+                        <>
+                          <Pause className="w-4 h-4 mr-2" />
+                          Pausar
+                        </>
+                      ) : speechStatus === 'paused' ? (
+                        <>
+                          <Play className="w-4 h-4 mr-2" />
+                          Continuar
+                        </>
+                      ) : (
+                        <>
+                          <Play className="w-4 h-4 mr-2" />
+                          Ler Página
+                        </>
+                      )}
+                    </Button>
+                    {(speechStatus === 'playing' || speechStatus === 'paused') && (
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={handleStopReading}
+                        aria-label="Parar leitura"
+                      >
+                        <Square className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {!ttsSupported && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <VolumeX className="w-4 h-4" />
+                  <span>Leitura em áudio não suportada neste navegador</span>
+                </div>
+              )}
+
+              <Separator />
+
+              {/* Atalhos de Teclado */}
+              <Collapsible open={showShortcuts} onOpenChange={setShowShortcuts}>
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" className="w-full justify-between" size="sm">
+                    <div className="flex items-center gap-2">
+                      <Keyboard className="w-5 h-5 text-indigo-600" />
+                      <span className="font-medium">Atalhos de Teclado</span>
+                    </div>
+                    {showShortcuts ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="mt-2 space-y-2">
+                  {ACCESSIBILITY_SHORTCUTS.map((shortcut, index) => (
+                    <div 
+                      key={index}
+                      className="flex items-center justify-between text-sm py-1"
+                    >
+                      <span className="text-muted-foreground text-xs">{shortcut.description}</span>
+                      <kbd className="px-2 py-0.5 bg-muted rounded text-xs font-mono">
+                        Alt+{shortcut.key}
+                      </kbd>
+                    </div>
+                  ))}
+                </CollapsibleContent>
+              </Collapsible>
+
+              <Separator />
+
+              {/* Link para página de acessibilidade */}
+              <Link
+                to="/acessibilidade"
+                className="flex items-center justify-center gap-2 text-primary hover:underline text-sm py-2"
+                onClick={() => setIsOpen(false)}
+              >
+                <ExternalLink className="w-4 h-4" />
+                Página de Acessibilidade
+              </Link>
+
+              {/* Restaurar Padrões */}
+              <Button
+                variant="outline"
+                onClick={handleReset}
+                className="w-full"
+                size="sm"
+              >
+                <RotateCcw className="w-4 h-4 mr-2" />
+                Restaurar Padrões
+              </Button>
             </div>
-          )}
-
-          <Separator />
-
-          {/* Reset Button */}
-          <Button
-            onClick={handleReset}
-            variant="outline"
-            className="w-full"
-            aria-label="Restaurar configurações padrão"
-          >
-            <RotateCcw className="h-4 w-4 mr-2" />
-            Restaurar Padrões
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+          </div>
+        </>
+      )}
+    </>
   );
 };
+
+export default AccessibilityToolbar;
