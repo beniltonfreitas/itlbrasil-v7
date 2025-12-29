@@ -9,7 +9,7 @@ export interface AccessibilitySettings {
 }
 
 const DEFAULT_SETTINGS: AccessibilitySettings = {
-  vlibrasEnabled: false,
+  vlibrasEnabled: true,
   fontScale: 1.0,
   highContrast: false,
   dyslexicFont: false,
