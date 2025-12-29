@@ -3,10 +3,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useSecureAuth } from '@/contexts/SecureAuthContext';
 import { Loader2, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useSiteSettings } from '@/hooks/useSiteSettings';
 import { z } from 'zod';
-import loginLogo from '@/assets/login-logo.png';
-import { TechBackground } from '@/components/ui/TechBackground';
 
 const loginSchema = z.object({
   email: z.string().email('Email inválido'),
@@ -17,7 +14,6 @@ export const SecureLogin: React.FC = () => {
   const { signIn, resetPassword, isAuthenticated, isLoading } = useSecureAuth();
   const location = useLocation();
   const { toast } = useToast();
-  const { settings } = useSiteSettings();
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -103,32 +99,48 @@ export const SecureLogin: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center relative p-4">
-      <TechBackground />
+    <div className="min-h-screen flex">
+      {/* Lado Esquerdo - Branding (só desktop) */}
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary to-primary/80 items-center justify-center p-12">
+        <div className="text-center space-y-8 max-w-md animate-fade-in">
+          <img 
+            src="https://itlbrasil.com/assets/logo-itl-brasil-CE1kkbvC.png"
+            alt="ITL Brasil"
+            className="w-72 h-auto mx-auto drop-shadow-lg"
+          />
+          <div className="space-y-4">
+            <h2 className="text-white text-3xl font-bold">
+              ITL Brasil
+            </h2>
+            <p className="text-white/80 text-lg">
+              Instituto de Tecnologia em Logística
+            </p>
+            <p className="text-white/60 text-sm">
+              Transformando a logística brasileira através da inovação e tecnologia
+            </p>
+          </div>
+        </div>
+      </div>
 
-      <div className="relative w-full max-w-[400px] animate-fade-in">
-        {/* Card institucional limpo */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-8">
-          
-          {/* Logo centralizado */}
-          <div className="w-full max-w-[180px] mx-auto mb-6">
+      {/* Lado Direito - Formulário */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 lg:p-12 bg-white">
+        <div className="w-full max-w-md animate-fade-in">
+          {/* Logo mobile */}
+          <div className="lg:hidden mb-8">
             <img 
-              src={settings.login_logo_url || settings.logo_url || settings.site_logo || loginLogo}
-              alt="ITL Brasil Logo"
-              className="w-full h-auto object-contain"
-              onError={(e) => {
-                e.currentTarget.src = loginLogo;
-              }}
+              src="https://itlbrasil.com/assets/logo-itl-brasil-CE1kkbvC.png"
+              alt="ITL Brasil"
+              className="w-40 mx-auto"
             />
           </div>
 
           {/* Título institucional */}
-          <h1 className="text-2xl font-semibold text-primary text-center mb-2">
+          <h1 className="text-2xl font-semibold text-primary text-center lg:text-left mb-2">
             Acesso Administrativo
           </h1>
 
           {/* Subtítulo discreto */}
-          <p className="text-muted-foreground text-center mb-8 text-sm">
+          <p className="text-muted-foreground text-center lg:text-left mb-8 text-sm">
             Entre com suas credenciais para continuar
           </p>
 
@@ -203,7 +215,7 @@ export const SecureLogin: React.FC = () => {
             </button>
 
             {/* Link esqueceu senha */}
-            <div className="flex justify-center">
+            <div className="flex justify-center lg:justify-start">
               <button
                 type="button"
                 onClick={handleResetPassword}
@@ -216,10 +228,10 @@ export const SecureLogin: React.FC = () => {
 
           {/* Rodapé */}
           <div className="mt-8 pt-6 border-t border-gray-100">
-            <p className="text-muted-foreground text-xs text-center mb-2">
+            <p className="text-muted-foreground text-xs text-center lg:text-left mb-2">
               Não tem uma conta? Entre em contato com um administrador.
             </p>
-            <p className="text-muted-foreground text-xs text-center">
+            <p className="text-muted-foreground text-xs text-center lg:text-left">
               © ITL Brasil – Todos os direitos reservados.
             </p>
           </div>
