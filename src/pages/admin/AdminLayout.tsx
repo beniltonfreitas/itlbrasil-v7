@@ -98,19 +98,20 @@ const AdminLayout = () => {
   
   // Função helper para verificar permissões baseada em roles e banco de dados
   const hasPermission = (permission: string) => {
-    if (permissionsLoading || loadingPermissionsDB) {
+    if (permissionsLoading) {
       console.log(`⏳ [AdminLayout] hasPermission("${permission}"): true (loading...)`);
       return true;
     }
     
-    // APENAS Superadmins têm acesso automático a TODAS as permissões
-    if (hasRole('superadmin')) {
-      console.log(`✅ [AdminLayout] hasPermission("${permission}"): true (superadmin - acesso total)`);
+    // Superadmin e Admin têm acesso automático a todas as permissões
+    // (exceto "Em Breve" que é filtrado separadamente no código)
+    if (hasRole('superadmin') || hasRole('admin')) {
+      console.log(`✅ [AdminLayout] hasPermission("${permission}"): true (${hasRole('superadmin') ? 'superadmin' : 'admin'} - acesso total)`);
       return true;
     }
     
-    // Admin, editor e author: usar permissões do banco de dados
-    if (hasRole('admin') || hasRole('editor') || hasRole('author')) {
+    // Editor e author: usar permissões do banco de dados (quando as tabelas existirem)
+    if (hasRole('editor') || hasRole('author')) {
       const result = rolePermissionsFromDB.includes(permission);
       console.log(`${result ? '✅' : '❌'} [AdminLayout] hasPermission("${permission}"): ${result} (${primaryRole}, from DB)`);
       return result;
