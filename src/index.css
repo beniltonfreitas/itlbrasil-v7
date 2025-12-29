@@ -2,6 +2,19 @@
 @tailwind components;
 @tailwind utilities;
 
+/* VLibras positioning - garantir que fique no canto inferior direito */
+[vw] {
+  position: fixed !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  z-index: 9990 !important;
+}
+
+[vw-access-button] {
+  margin-bottom: 10px !important;
+  margin-right: 10px !important;
+}
+
 /* Sidebar transitions */
 .sidebar-transition {
   transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);

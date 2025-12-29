@@ -131,9 +131,9 @@ export const AccessibilityToolbar: React.FC<AccessibilityToolbarProps> = ({ clas
 
   return (
     <>
-      {/* Botão flutuante fixo - Centro da lateral direita */}
+      {/* Botão flutuante fixo - Abaixo do VLibras (bottom-32 para não sobrepor) */}
       <div 
-        className={`fixed right-0 top-1/2 -translate-y-1/2 z-[9998] flex flex-col gap-2 ${className}`}
+        className={`fixed right-0 bottom-32 z-[9998] flex flex-col gap-2 ${className}`}
         role="region"
         aria-label="Ferramentas de acessibilidade"
       >
@@ -173,7 +173,7 @@ export const AccessibilityToolbar: React.FC<AccessibilityToolbarProps> = ({ clas
             role="dialog"
             aria-modal="true"
             aria-labelledby="accessibility-title"
-            className="fixed right-4 top-1/2 -translate-y-1/2 w-[350px] max-h-[90vh] bg-background border border-border rounded-xl shadow-2xl z-[9999] overflow-hidden flex flex-col"
+            className="fixed right-4 bottom-36 w-[350px] max-h-[80vh] bg-background border border-border rounded-xl shadow-2xl z-[9999] overflow-hidden flex flex-col"
           >
             {/* Header */}
             <div className="p-4 bg-primary text-primary-foreground flex items-center justify-between">
