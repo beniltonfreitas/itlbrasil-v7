@@ -9,6 +9,7 @@ import About from '@/pages/About';
 import Contact from '@/pages/Contact';
 import NotFound from '@/pages/NotFound';
 import { SEO } from '@/components/SEO';
+import { AccessibilityToolbar } from '@/components/AccessibilityToolbar';
 
 export const ModeloItl03: React.FC = () => {
   return (
@@ -32,6 +33,8 @@ export const ModeloItl03: React.FC = () => {
       </main>
       
       <Footer03 />
+      
+      <AccessibilityToolbar />
     </div>
   );
 };
