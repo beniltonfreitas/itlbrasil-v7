@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Newspaper, Send, Trash2, Copy, Check, Loader2, Upload, Download, Eye, List, AlertCircle, History, Wand2, BarChart3, Settings, Clock, HelpCircle, BookOpen } from "lucide-react";
+import { Newspaper, Send, Trash2, Copy, Check, Loader2, Upload, Download, Eye, List, AlertCircle, History, Wand2, BarChart3, Settings, Clock, HelpCircle, BookOpen, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,7 +19,12 @@ import NoticiasAIStatsDashboard from "@/components/NoticiasAIStatsDashboard";
 import NoticiasAISourcesManager from "@/components/NoticiasAISourcesManager";
 import NoticiasAIScheduleManager from "@/components/NoticiasAIScheduleManager";
 import { NoticiasAITutorial } from "@/components/NoticiasAITutorial";
+import { NoticiasAITour } from "@/components/NoticiasAITour";
+import { ContextualTip } from "@/components/ContextualTip";
+import { useNoticiasAITour } from "@/hooks/useNoticiasAITour";
+import { useContextualTips } from "@/hooks/useContextualTips";
 import { useCreateNoticiasAIImport, detectNewsSource } from "@/hooks/useNoticiasAIImports";
+import type { CallBackProps } from 'react-joyride';
 import {
   Dialog,
   DialogContent,
@@ -94,6 +99,23 @@ const NoticiasAI = () => {
   // Preview dialog state
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewIndex, setPreviewIndex] = useState(0);
+
+  // Tour and contextual tips
+  const { 
+    run: tourRun, 
+    stepIndex: tourStepIndex, 
+    startTour, 
+    handleJoyrideCallback,
+    tourCompleted 
+  } = useNoticiasAITour();
+  
+  const { 
+    activeTip, 
+    tipVisible, 
+    dismissTip, 
+    dismissPermanently,
+    showTip 
+  } = useContextualTips();
 
   const createArticle = useCreateArticle();
   const { data: categories } = useCategories();
@@ -274,6 +296,8 @@ const NoticiasAI = () => {
         
         if (successCount > 0) {
           toast.success(`${successCount} notícia(s) processada(s) com sucesso!`);
+          // Show contextual tip for first JSON generation
+          showTip('first-json');
         }
         
         if (failedCount > 0) {
@@ -323,6 +347,10 @@ const NoticiasAI = () => {
         // Auto-select tab based on input type
         if (inputType === "JSON" || inputType === "LINK") {
           setActiveTab("json");
+          // Show contextual tip for first JSON generation
+          if (data.json?.noticias?.length) {
+            showTip('first-json');
+          }
         } else {
           setActiveTab("cadastro");
         }
@@ -361,6 +389,8 @@ const NoticiasAI = () => {
       });
       
       toast.success("Imagem enviada! URL inserida no campo de texto.");
+      // Show contextual tip
+      showTip('image-uploaded');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Erro ao enviar imagem");
     } finally {
@@ -503,6 +533,7 @@ const NoticiasAI = () => {
                 size="sm"
                 onClick={() => handleImportNews()}
                 disabled={isImporting}
+                className="noticias-ai-import-btn"
               >
                 {isImporting ? (
                   <>
@@ -550,8 +581,31 @@ const NoticiasAI = () => {
     );
   };
 
+  // Handle tab changes for contextual tips
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    if (value === 'historico') showTip('history-tab');
+    if (value === 'sources') showTip('sources-tab');
+    if (value === 'schedules') showTip('schedules-tab');
+  };
+
   return (
     <div className="space-y-6">
+      {/* Guided Tour */}
+      <NoticiasAITour 
+        run={tourRun} 
+        stepIndex={tourStepIndex} 
+        onCallback={handleJoyrideCallback as (data: CallBackProps) => void} 
+      />
+      
+      {/* Contextual Tips */}
+      <ContextualTip
+        tip={activeTip}
+        visible={tipVisible}
+        onDismiss={dismissTip}
+        onDismissPermanently={dismissPermanently}
+      />
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -564,24 +618,38 @@ const NoticiasAI = () => {
           </div>
         </div>
 
-        {/* Tutorial Button */}
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button variant="outline" size="sm" className="gap-2">
-              <BookOpen className="h-4 w-4" />
-              Tutorial
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <HelpCircle className="h-5 w-5 text-primary" />
-                Tutorial do Notícias AI
-              </DialogTitle>
-            </DialogHeader>
-            <NoticiasAITutorial />
-          </DialogContent>
-        </Dialog>
+        {/* Header Actions */}
+        <div className="flex items-center gap-2">
+          {/* Start Tour Button */}
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={startTour}
+            className="gap-2"
+          >
+            <Play className="h-4 w-4" />
+            {tourCompleted ? 'Repetir Tour' : 'Iniciar Tour'}
+          </Button>
+
+          {/* Tutorial Button */}
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-2 noticias-ai-tutorial-btn">
+                <BookOpen className="h-4 w-4" />
+                Tutorial
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <HelpCircle className="h-5 w-5 text-primary" />
+                  Tutorial do Notícias AI
+                </DialogTitle>
+              </DialogHeader>
+              <NoticiasAITutorial />
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       {/* Input Section */}
@@ -596,7 +664,7 @@ const NoticiasAI = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex flex-wrap gap-2 mb-2">
+          <div className="flex flex-wrap gap-2 mb-2 noticias-ai-badges">
             <Badge variant="outline" className="cursor-pointer hover:bg-primary/10" onClick={() => setInput("EXCLUSIVA\n\n")}>
               EXCLUSIVA
             </Badge>
@@ -608,12 +676,13 @@ const NoticiasAI = () => {
             </Badge>
             <Badge 
               variant={isMultipleUrls ? "default" : "outline"} 
-              className={`cursor-pointer ${isMultipleUrls ? "bg-blue-600 hover:bg-blue-700" : "hover:bg-primary/10"}`}
+              className={`cursor-pointer noticias-ai-badge-lote ${isMultipleUrls ? "bg-blue-600 hover:bg-blue-700" : "hover:bg-primary/10"}`}
               onClick={() => {
                 setIsBatchMode(!isBatchMode);
                 if (!isBatchMode) {
                   setInput("");
                 }
+                showTip('batch-mode');
               }}
             >
               <List className="h-3 w-3 mr-1" />
@@ -650,7 +719,7 @@ const NoticiasAI = () => {
               size="sm"
               onClick={() => imageInputRef.current?.click()}
               disabled={uploadingImage}
-              className="border-primary text-primary hover:bg-primary/10"
+              className="border-primary text-primary hover:bg-primary/10 noticias-ai-upload"
             >
               {uploadingImage ? (
                 <>
@@ -674,14 +743,14 @@ const NoticiasAI = () => {
             }
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            className="min-h-[200px] text-sm"
+            className="min-h-[200px] text-sm noticias-ai-input"
           />
 
           <div className="flex gap-2">
             <Button
               onClick={handleGenerate}
               disabled={isLoading || !input.trim()}
-              className="flex-1"
+              className="flex-1 noticias-ai-generate"
             >
               {isLoading ? (
                 <>
@@ -720,23 +789,23 @@ const NoticiasAI = () => {
           <CardTitle>Resultado</CardTitle>
         </CardHeader>
         <CardContent>
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="noticias-ai-tabs">
             <TabsList className="grid w-full grid-cols-6">
-              <TabsTrigger value="cadastro">Manual</TabsTrigger>
-              <TabsTrigger value="json">JSON</TabsTrigger>
-              <TabsTrigger value="historico" className="flex items-center gap-1">
+              <TabsTrigger value="cadastro" className="noticias-ai-tab-manual">Manual</TabsTrigger>
+              <TabsTrigger value="json" className="noticias-ai-tab-json">JSON</TabsTrigger>
+              <TabsTrigger value="historico" className="flex items-center gap-1 noticias-ai-tab-historico">
                 <History className="h-3 w-3" />
                 Histórico
               </TabsTrigger>
-              <TabsTrigger value="stats" className="flex items-center gap-1">
+              <TabsTrigger value="stats" className="flex items-center gap-1 noticias-ai-tab-stats">
                 <BarChart3 className="h-3 w-3" />
                 Estatísticas
               </TabsTrigger>
-              <TabsTrigger value="sources" className="flex items-center gap-1">
+              <TabsTrigger value="sources" className="flex items-center gap-1 noticias-ai-tab-sources">
                 <Settings className="h-3 w-3" />
                 Fontes
               </TabsTrigger>
-              <TabsTrigger value="schedules" className="flex items-center gap-1">
+              <TabsTrigger value="schedules" className="flex items-center gap-1 noticias-ai-tab-schedules">
                 <Clock className="h-3 w-3" />
                 Agendamentos
               </TabsTrigger>
