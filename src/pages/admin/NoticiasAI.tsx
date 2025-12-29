@@ -1,5 +1,5 @@
-import { useState, useRef } from "react";
-import { Newspaper, Send, Trash2, Copy, Check, Loader2, Upload, Download, Eye, List, AlertCircle, History, Wand2, BarChart3, Settings, Clock, HelpCircle, BookOpen, Play } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { Newspaper, Send, Trash2, Copy, Check, Loader2, Upload, Download, Eye, List, AlertCircle, History, Wand2, BarChart3, Settings, Clock, HelpCircle, BookOpen, Play, Lock, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { uploadImageToStorage } from "@/lib/imageUpload";
@@ -23,6 +24,10 @@ import { NoticiasAITour } from "@/components/NoticiasAITour";
 import { ContextualTip } from "@/components/ContextualTip";
 import { useNoticiasAITour } from "@/hooks/useNoticiasAITour";
 import { useContextualTips } from "@/hooks/useContextualTips";
+import { useOnboardingProgress } from "@/hooks/useOnboardingProgress";
+import { OnboardingProgress } from "@/components/OnboardingProgress";
+import { OnboardingChecklist } from "@/components/OnboardingChecklist";
+import { AchievementToast } from "@/components/AchievementToast";
 import { useCreateNoticiasAIImport, detectNewsSource } from "@/hooks/useNoticiasAIImports";
 import type { CallBackProps } from 'react-joyride';
 import {
@@ -117,9 +122,35 @@ const NoticiasAI = () => {
     showTip 
   } = useContextualTips();
 
+  // Onboarding progress system
+  const {
+    level,
+    levelName,
+    totalPoints,
+    levelProgress,
+    recentAchievement,
+    leveledUp,
+    completeMilestone,
+    isMilestoneCompleted,
+    isFeatureUnlocked,
+    dismissAchievement,
+  } = useOnboardingProgress();
+
   const createArticle = useCreateArticle();
   const { data: categories } = useCategories();
   const createImportLog = useCreateNoticiasAIImport();
+
+  // Track first visit milestone
+  useEffect(() => {
+    completeMilestone('first_visit');
+  }, [completeMilestone]);
+
+  // Track tour completion
+  useEffect(() => {
+    if (tourCompleted) {
+      completeMilestone('tour_completed');
+    }
+  }, [tourCompleted, completeMilestone]);
 
   // Detect URLs in input for batch mode
   const detectUrls = (text: string): string[] => {
@@ -247,6 +278,17 @@ const NoticiasAI = () => {
           message += ` (${formatCorrectedCount} com lide corrigido)`;
         }
         toast.success(message);
+        
+        // Track milestones
+        completeMilestone('first_import');
+        if (isMultipleUrls) {
+          completeMilestone('first_batch');
+        }
+        // Track import counts
+        const totalImports = successCount;
+        if (totalImports >= 10) completeMilestone('ten_imports');
+        if (totalImports >= 50) completeMilestone('fifty_imports');
+        
         handleClear();
         setPreviewOpen(false);
       }
@@ -298,6 +340,9 @@ const NoticiasAI = () => {
           toast.success(`${successCount} notícia(s) processada(s) com sucesso!`);
           // Show contextual tip for first JSON generation
           showTip('first-json');
+          // Track batch milestone
+          completeMilestone('first_batch');
+          completeMilestone('first_json');
         }
         
         if (failedCount > 0) {
@@ -350,9 +395,17 @@ const NoticiasAI = () => {
           // Show contextual tip for first JSON generation
           if (data.json?.noticias?.length) {
             showTip('first-json');
+            completeMilestone('first_json');
+            completeMilestone('first_link');
           }
         } else {
           setActiveTab("cadastro");
+          completeMilestone('first_text');
+        }
+        
+        // Track EXCLUSIVA mode
+        if (inputType === "EXCLUSIVA") {
+          completeMilestone('first_exclusiva');
         }
 
         toast.success("Notícia processada com sucesso!");
@@ -389,8 +442,9 @@ const NoticiasAI = () => {
       });
       
       toast.success("Imagem enviada! URL inserida no campo de texto.");
-      // Show contextual tip
+      // Show contextual tip and track milestone
       showTip('image-uploaded');
+      completeMilestone('first_image');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Erro ao enviar imagem");
     } finally {
@@ -581,10 +635,16 @@ const NoticiasAI = () => {
     );
   };
 
-  // Handle tab changes for contextual tips
+  // Handle tab changes for contextual tips and milestone tracking
   const handleTabChange = (value: string) => {
     setActiveTab(value);
-    if (value === 'historico') showTip('history-tab');
+    if (value === 'historico') {
+      showTip('history-tab');
+      completeMilestone('viewed_history');
+    }
+    if (value === 'stats') {
+      completeMilestone('viewed_stats');
+    }
     if (value === 'sources') showTip('sources-tab');
     if (value === 'schedules') showTip('schedules-tab');
   };
@@ -606,8 +666,16 @@ const NoticiasAI = () => {
         onDismissPermanently={dismissPermanently}
       />
 
+      {/* Achievement Toast */}
+      <AchievementToast
+        achievement={recentAchievement}
+        leveledUp={leveledUp}
+        newLevel={levelName}
+        onDismiss={dismissAchievement}
+      />
+
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div className="flex items-center gap-3">
           <Newspaper className="h-8 w-8 text-primary" />
           <div>
@@ -620,6 +688,9 @@ const NoticiasAI = () => {
 
         {/* Header Actions */}
         <div className="flex items-center gap-2">
+          {/* Onboarding Progress Indicator */}
+          <OnboardingProgress compact />
+
           {/* Start Tour Button */}
           <Button 
             variant="ghost" 
@@ -832,50 +903,66 @@ const NoticiasAI = () => {
         </CardContent>
       </Card>
 
-      {/* Quick Tips Card */}
-      <Card className="border-primary/20 bg-primary/5">
-        <CardContent className="pt-6">
-          <div className="flex items-start gap-4">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <BookOpen className="h-5 w-5 text-primary" />
-            </div>
-            <div className="flex-1">
-              <h3 className="font-semibold mb-2">Dicas Rápidas</h3>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs text-muted-foreground">
-                <div className="flex items-center gap-1">
-                  <Badge variant="outline" className="text-red-600 border-red-300">EXCLUSIVA</Badge>
-                  <span>Preservar original</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Badge variant="outline" className="text-blue-600 border-blue-300">JSON</Badge>
-                  <span>Importação automática</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Badge variant="outline" className="text-purple-600 border-purple-300">LOTE</Badge>
-                  <span>Até 10 URLs</span>
-                </div>
+      {/* Progress and Tips Card */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Onboarding Checklist */}
+        <Card className="border-primary/20 bg-primary/5">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Trophy className="h-4 w-4 text-primary" />
+              Próximos Objetivos
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <OnboardingChecklist maxItems={4} showCompleted={true} />
+          </CardContent>
+        </Card>
+
+        {/* Quick Tips Card */}
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="pt-6">
+            <div className="flex items-start gap-4">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <BookOpen className="h-5 w-5 text-primary" />
               </div>
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button variant="link" size="sm" className="p-0 h-auto mt-2 text-primary">
-                    <HelpCircle className="h-3 w-3 mr-1" />
-                    Ver tutorial completo
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
-                  <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2">
-                      <HelpCircle className="h-5 w-5 text-primary" />
-                      Tutorial do Notícias AI
-                    </DialogTitle>
-                  </DialogHeader>
-                  <NoticiasAITutorial />
-                </DialogContent>
-              </Dialog>
+              <div className="flex-1">
+                <h3 className="font-semibold mb-2">Dicas Rápidas</h3>
+                <div className="grid grid-cols-1 gap-2 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-1">
+                    <Badge variant="outline" className="text-red-600 border-red-300">EXCLUSIVA</Badge>
+                    <span>Preservar original</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Badge variant="outline" className="text-blue-600 border-blue-300">JSON</Badge>
+                    <span>Importação automática</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Badge variant="outline" className="text-purple-600 border-purple-300">LOTE</Badge>
+                    <span>Até 10 URLs</span>
+                  </div>
+                </div>
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button variant="link" size="sm" className="p-0 h-auto mt-2 text-primary">
+                      <HelpCircle className="h-3 w-3 mr-1" />
+                      Ver tutorial completo
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle className="flex items-center gap-2">
+                        <HelpCircle className="h-5 w-5 text-primary" />
+                        Tutorial do Notícias AI
+                      </DialogTitle>
+                    </DialogHeader>
+                    <NoticiasAITutorial />
+                  </DialogContent>
+                </Dialog>
+              </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Preview Dialog */}
       {generatedContent.json?.noticias && (

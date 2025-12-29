@@ -124,6 +124,7 @@ export const useNoticiasAITour = () => {
       completed: true,
       completedAt: new Date().toISOString(),
     }));
+    // Note: Milestone tracking is now handled by the parent component
   }, []);
 
   const resetTour = useCallback(() => {
