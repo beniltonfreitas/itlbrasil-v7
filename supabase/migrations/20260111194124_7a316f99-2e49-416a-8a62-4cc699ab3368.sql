@@ -1,0 +1,1 @@
+UPDATE public.site_settings SET value = '"/Logo_ITL.png"', updated_at = now() WHERE key = 'logo_url';

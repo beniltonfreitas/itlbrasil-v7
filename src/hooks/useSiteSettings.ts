@@ -28,6 +28,10 @@ export const useSiteSettings = () => {
         if (typeof value === 'object') {
           value = JSON.stringify(value);
         }
+        // Remove surrounding quotes if the value is a JSON-escaped string
+        if (typeof value === 'string' && value.startsWith('"') && value.endsWith('"')) {
+          value = value.slice(1, -1);
+        }
         acc[setting.key] = value;
         return acc;
       }, {} as Record<string, string>);
