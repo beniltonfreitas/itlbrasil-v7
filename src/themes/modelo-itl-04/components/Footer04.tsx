@@ -41,9 +41,8 @@ export const Footer04: React.FC = () => {
               <img 
                 src="/Logo_ITL.png" 
                 alt="Instituto Tribuna Livre" 
-                className="h-12 w-auto mb-2"
+                className="h-14 w-auto"
               />
-              <div className="text-sm font-semibold">Jornalismo de Qualidade</div>
             </div>
             <p className="text-sm text-white/80 mb-4">
               Portal de notícias independente dedicado a trazer informação de qualidade 

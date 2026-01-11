@@ -73,16 +73,12 @@ export const Footer03: React.FC = () => {
       <div className="container mx-auto px-4 py-12">
         {/* Logo and Social */}
         <div className="flex flex-col md:flex-row items-center justify-between mb-12 pb-8 border-b border-white/10">
-          <Link to="/" className="flex items-center gap-3 mb-6 md:mb-0">
+          <Link to="/" className="flex items-center mb-6 md:mb-0">
             <img 
               src="/Logo_ITL.png" 
               alt="Instituto Tribuna Livre" 
               className="h-16 w-auto object-contain"
             />
-            <div>
-              <div className="text-3xl font-bold tracking-tight">Instituto Tribuna Livre</div>
-              <div className="text-xs text-white/60 uppercase tracking-wider">Jornalismo de Qualidade</div>
-            </div>
           </Link>
 
           <div className="flex items-center gap-4">
