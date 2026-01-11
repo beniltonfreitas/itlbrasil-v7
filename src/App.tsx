@@ -6,7 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { SecureAuthProvider } from "./contexts/SecureAuthContext";
-import { ThemeProvider } from "./contexts/ThemeContext";
+
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AdminErrorBoundary } from "./components/AdminErrorBoundary";
 import Index from "./pages/Index";
@@ -91,11 +91,11 @@ import { TrainingOthers } from "./pages/admin/training/TrainingOthers";
 
 import EditionReader from "./pages/EditionReader";
 import EditionFlipbook from "./pages/EditionFlipbook";
-import { useTheme } from "./contexts/ThemeContext";
+import { useTheme, ThemeProvider } from "./contexts/ThemeContext";
 
 const queryClient = new QueryClient();
 
-// Wrapper component for themed pages
+// Wrapper component for themed pages - must be used inside ThemeProvider
 const ThemedPageWrapper = ({ children }: { children: React.ReactNode }) => {
   const { currentTheme } = useTheme();
   const ThemeComponent = currentTheme.component;
@@ -103,8 +103,8 @@ const ThemedPageWrapper = ({ children }: { children: React.ReactNode }) => {
   return <ThemeComponent>{children}</ThemeComponent>;
 };
 
-// Public routes component with forced light theme
-const PublicRoutes = () => {
+// Inner component that uses theme context
+const PublicRoutesInner = () => {
   return (
     <Routes>
       <Route path="/" element={<ThemedPageWrapper><Index /></ThemedPageWrapper>} />
@@ -128,6 +128,15 @@ const PublicRoutes = () => {
       {/* Catch-all for public routes */}
       <Route path="*" element={<ThemedPageWrapper><NotFound /></ThemedPageWrapper>} />
     </Routes>
+  );
+};
+
+// Public routes component wrapped with ThemeProvider
+const PublicRoutes = () => {
+  return (
+    <ThemeProvider>
+      <PublicRoutesInner />
+    </ThemeProvider>
   );
 };
 
@@ -251,11 +260,9 @@ const App = () => (
             <NextThemesProvider attribute="class" defaultTheme="light" forcedTheme="light" enableSystem={false}>
               <TooltipProvider>
                 <SecureAuthProvider>
-                  <ThemeProvider>
-                    <Toaster />
-                    <Sonner />
-                    <PublicRoutes />
-                  </ThemeProvider>
+                  <Toaster />
+                  <Sonner />
+                  <PublicRoutes />
                 </SecureAuthProvider>
               </TooltipProvider>
             </NextThemesProvider>
