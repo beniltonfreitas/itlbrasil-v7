@@ -82,20 +82,12 @@ export const Footer05: React.FC = () => {
 
         {/* Social Media & Logo */}
         <div className="border-t pt-8 flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-3">
+        <div className="flex items-center">
             <img
               src={settings.logo_url || '/Logo_ITL.png'}
-              alt={typeof settings.site_name === 'string' ? settings.site_name : 'Instituto Tribuna Livre'}
-              className="h-10 object-contain"
+              alt="Instituto Tribuna Livre"
+              className="h-14 object-contain"
             />
-            <div className="flex flex-col">
-              <span className="font-bold text-lg">
-                {typeof settings.site_name === 'string' ? settings.site_name : 'Instituto Tribuna Livre'}
-              </span>
-              <span className="text-xs text-muted-foreground">
-                {typeof settings.site_tagline === 'string' ? settings.site_tagline : 'Jornalismo de Qualidade'}
-              </span>
-            </div>
           </div>
 
           <div className="flex items-center gap-4">

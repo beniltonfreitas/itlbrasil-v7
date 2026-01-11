@@ -37,7 +37,11 @@ export const Footer02: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Logo and Description */}
           <div className="space-y-4">
-            <div className="text-2xl font-bold">Instituto Tribuna Livre</div>
+            <img 
+              src="/Logo_ITL.png" 
+              alt="Instituto Tribuna Livre" 
+              className="h-12 w-auto object-contain"
+            />
             <p className="text-blue-100 text-sm leading-relaxed">
               Portal de notícias com informações atualizadas sobre política, economia, 
               esportes e muito mais. Conectando você ao que acontece no Brasil e no mundo.
